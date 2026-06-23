@@ -1,0 +1,487 @@
+# Build a Complete Startup-Grade College LMS Platform (MERN Stack)
+
+IMPORTANT:
+
+Create a professional full-stack MERN application with completely separate frontend and backend folders.
+
+Do NOT create a single-folder project.
+
+Use the following structure:
+
+project-root/
+│
+├── frontend/
+│   ├── src/
+│   ├── public/
+│   ├── components/
+│   ├── pages/
+│   ├── layouts/
+│   ├── hooks/
+│   ├── context/
+│   ├── services/
+│   ├── routes/
+│   ├── assets/
+│   ├── App.jsx
+│   ├── main.jsx
+│   └── package.json
+│
+├── backend/
+│   ├── config/
+│   ├── controllers/
+│   ├── middleware/
+│   ├── models/
+│   ├── routes/
+│   ├── services/
+│   ├── utils/
+│   ├── uploads/
+│   ├── scripts/
+│   ├── server.js
+│   └── package.json
+│
+├── README.md
+└── .gitignore
+
+Requirements:
+
+* Frontend and backend must be fully separated.
+* Separate package.json for frontend and backend.
+* Frontend should run with npm run dev.
+* Backend should run with npm run server.
+* Use Axios for API communication.
+* Use environment variables.
+* Configure CORS properly.
+* MongoDB logic should only exist in backend.
+* Generate complete scalable enterprise-level architecture.
+
+---
+
+## Project Vision
+
+Build a modern, startup-quality College Learning Management System (LMS) with premium UI/UX, advanced dashboards, responsive design, smooth animations, and production-ready architecture.
+
+The UI should look similar to modern SaaS platforms such as:
+
+* Notion
+* Linear
+* Stripe Dashboard
+* Framer
+* Vercel
+
+The platform must be fully responsive and optimized for desktop, tablet, and mobile devices.
+
+---
+
+## Technology Stack
+
+### Frontend
+
+* React.js
+* Vite
+* Tailwind CSS
+* Shadcn UI
+* Framer Motion
+* React Router DOM
+* Axios
+* TanStack React Query
+* React Hook Form
+* Recharts
+
+### Backend
+
+* Node.js
+* Express.js
+* MongoDB Atlas
+* Mongoose
+* JWT Authentication
+* bcryptjs
+* multer
+* xlsx
+
+---
+
+# Authentication System
+
+Implement complete authentication flow:
+
+* Student Login
+* Faculty Login
+* Admin Login
+* Forgot Password
+* Reset Password
+* JWT Authentication
+* Protected Routes
+* Role-Based Access Control
+* Persistent Sessions
+
+Roles:
+
+* Student
+* Faculty
+* Admin
+* HOD
+
+---
+
+# Landing Page
+
+Create a premium startup landing page with:
+
+* Hero Section
+* Animated Statistics
+* Features Section
+* About Platform
+* Benefits Section
+* Testimonials
+* FAQ Section
+* Contact Section
+* Footer
+
+Animations:
+
+* Framer Motion
+* Scroll Animations
+* Hover Animations
+* Glassmorphism Effects
+* Smooth Page Transitions
+* Interactive Cards
+
+---
+
+# Student Module
+
+Student Dashboard
+
+Features:
+
+* Dashboard Overview
+* Profile Management
+* Course / Subject List
+* Attendance Records
+* Timetable View
+* Assignment Submission
+* Quiz & Online Tests
+* Study Materials
+* Exam Schedule
+* Results & Marks
+* Notifications
+* Leave Application
+
+Dashboard Widgets:
+
+* Attendance Percentage
+* Upcoming Exams
+* Today's Classes
+* Latest Notices
+* Pending Assignments
+
+---
+
+# Faculty Module
+
+Faculty Dashboard
+
+Features:
+
+* Attendance Management
+* Upload Study Materials
+* Create Assignments
+* Create Quizzes
+* Grade Assignments
+* Upload Marks
+* Manage Timetable
+* Announcements
+
+Dashboard Widgets:
+
+* Today's Classes
+* Total Students
+* Pending Evaluations
+* Recent Activities
+
+---
+
+# Admin Module
+
+Admin Dashboard
+
+Features:
+
+* Student Management
+* Faculty Management
+* Department Management
+* Subject Management
+* Semester Management
+* Timetable Management
+* Holiday Management
+* Notice Board Management
+* Reports & Analytics
+* Role-Based Access Control
+
+Dashboard Widgets:
+
+* Total Students
+* Total Faculty
+* Total Departments
+* Attendance Analytics
+* Recent Activities
+
+---
+
+# HOD Module
+
+Features:
+
+* Department Dashboard
+* Faculty Monitoring
+* Attendance Reports
+* Subject Allocation
+* Student Performance Analysis
+
+---
+
+# Smart Timetable Management
+
+Create an advanced timetable management system.
+
+Features:
+
+* Upload Excel (.xlsx/.csv)
+* Parse Timetable Automatically
+* Generate Timetable Records
+* Semester-wise Timetable
+* Faculty-wise Timetable
+* Room-wise Timetable
+
+Validation:
+
+* Faculty Conflict Detection
+* Room Conflict Detection
+* Duplicate Lecture Detection
+
+Excel Upload Flow:
+
+Admin Upload Excel
+↓
+System Parses Excel
+↓
+Validate Data
+↓
+Store in MongoDB
+↓
+Generate Timetable
+↓
+Display to Students and Faculty
+
+---
+
+# Assignment Module
+
+Features:
+
+* Create Assignment
+* Submission Deadline
+* File Upload
+* Assignment Evaluation
+* Marks
+* Feedback
+
+Supported Files:
+
+* PDF
+* DOCX
+* ZIP
+
+---
+
+# Quiz Module
+
+Features:
+
+* MCQ Quizzes
+* Timer-Based Quiz
+* Auto Evaluation
+* Instant Results
+* Score Tracking
+* Attempt History
+
+---
+
+# Attendance Module
+
+Features:
+
+* Mark Attendance
+* Subject-wise Attendance
+* Daily Attendance
+* Monthly Reports
+* Semester Reports
+
+Analytics:
+
+* Attendance Charts
+* Attendance Trends
+* Attendance Percentage
+
+---
+
+# Study Material Repository
+
+Features:
+
+* Upload PDF
+* Upload PPT
+* Upload Notes
+* Download Resources
+* Search Materials
+* Subject Filters
+
+---
+
+# Results Module
+
+Features:
+
+* Internal Marks
+* Semester Results
+* Subject-wise Marks
+* Grade Calculation
+* Result History
+
+---
+
+# Academic Calendar
+
+Features:
+
+* Holidays
+* Events
+* Exams
+* Important Dates
+
+Views:
+
+* Monthly
+* Weekly
+* Agenda
+
+---
+
+# Notice Board
+
+Features:
+
+* Create Notice
+* Pin Notice
+* Department-wise Notice
+* Semester-wise Notice
+
+---
+
+# Event Management
+
+Features:
+
+* Create Event
+* Event Calendar
+* Upcoming Events
+* Event Details Page
+
+---
+
+# Analytics Dashboard
+
+Build beautiful analytics dashboards using charts and graphs.
+
+Analytics:
+
+* Student Analytics
+* Attendance Analytics
+* Assignment Analytics
+* Faculty Analytics
+
+Use Recharts.
+
+---
+
+# UI/UX Requirements
+
+Design Style:
+
+* Premium SaaS Product
+* Modern Startup Design
+* Minimalistic Layout
+* Clean Typography
+* Fully Responsive
+
+Effects:
+
+* Glassmorphism
+* Gradient Backgrounds
+* Smooth Animations
+* Micro Interactions
+* Loading Skeletons
+* Animated Cards
+* Hover Effects
+* Dark Mode
+* Light Mode
+
+---
+
+# Database Collections
+
+Users
+Students
+Faculty
+Departments
+Subjects
+Semesters
+Attendance
+Timetables
+Assignments
+Submissions
+Quizzes
+QuizAttempts
+Results
+Notices
+Events
+Materials
+Holidays
+LeaveApplications
+
+---
+
+# API Requirements
+
+Create complete REST APIs for:
+
+* Authentication
+* Students
+* Faculty
+* Admin
+* HOD
+* Attendance
+* Timetable
+* Assignments
+* Quizzes
+* Results
+* Materials
+* Notices
+* Events
+
+---
+
+# Code Quality Requirements
+
+* Clean Architecture
+* Reusable Components
+* Production Ready Code
+* Proper Error Handling
+* Validation
+* Pagination
+* Search
+* Filters
+* Environment Variables
+* MongoDB Atlas Integration
+* Secure JWT Authentication
+
+Generate the complete frontend and backend codebase with all pages, APIs, database schemas, middleware, controllers, routes, dashboards, animations, responsive layouts, and fully connected functionality.

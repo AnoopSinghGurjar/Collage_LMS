@@ -1,22 +1,36 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: College LMS Platform API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
-    description: Health operations
+  - name: auth
+  - name: users
+  - name: students
+  - name: faculty
+  - name: departments
+  - name: subjects
+  - name: attendance
+  - name: timetable
+  - name: assignments
+  - name: quizzes
+  - name: results
+  - name: materials
+  - name: notices
+  - name: events
+  - name: leaves
+  - name: dashboard
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +38,2070 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # AUTH
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout
+      responses:
+        "200":
+          description: Logged out
+
+  # STUDENTS
+  /students:
+    get:
+      operationId: listStudents
+      tags: [students]
+      summary: List all students
+      parameters:
+        - name: departmentId
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: semester
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: search
+          in: query
+          schema:
+            type: ["string", "null"]
+        - name: page
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: limit
+          in: query
+          schema:
+            type: ["integer", "null"]
+      responses:
+        "200":
+          description: List of students
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentListResponse"
+    post:
+      operationId: createStudent
+      tags: [students]
+      summary: Create student
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StudentInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Student"
+
+  /students/{id}:
+    get:
+      operationId: getStudent
+      tags: [students]
+      summary: Get student by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Student
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Student"
+    patch:
+      operationId: updateStudent
+      tags: [students]
+      summary: Update student
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StudentUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Student"
+    delete:
+      operationId: deleteStudent
+      tags: [students]
+      summary: Delete student
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+
+  # FACULTY
+  /faculty:
+    get:
+      operationId: listFaculty
+      tags: [faculty]
+      summary: List all faculty
+      parameters:
+        - name: departmentId
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: search
+          in: query
+          schema:
+            type: ["string", "null"]
+      responses:
+        "200":
+          description: List of faculty
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Faculty"
+    post:
+      operationId: createFaculty
+      tags: [faculty]
+      summary: Create faculty
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FacultyInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Faculty"
+
+  /faculty/{id}:
+    get:
+      operationId: getFaculty
+      tags: [faculty]
+      summary: Get faculty by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Faculty
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Faculty"
+    patch:
+      operationId: updateFaculty
+      tags: [faculty]
+      summary: Update faculty
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FacultyUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Faculty"
+    delete:
+      operationId: deleteFaculty
+      tags: [faculty]
+      summary: Delete faculty
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+
+  # DEPARTMENTS
+  /departments:
+    get:
+      operationId: listDepartments
+      tags: [departments]
+      summary: List departments
+      responses:
+        "200":
+          description: List of departments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Department"
+    post:
+      operationId: createDepartment
+      tags: [departments]
+      summary: Create department
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DepartmentInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Department"
+
+  /departments/{id}:
+    patch:
+      operationId: updateDepartment
+      tags: [departments]
+      summary: Update department
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DepartmentUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Department"
+    delete:
+      operationId: deleteDepartment
+      tags: [departments]
+      summary: Delete department
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+
+  # SUBJECTS
+  /subjects:
+    get:
+      operationId: listSubjects
+      tags: [subjects]
+      summary: List subjects
+      parameters:
+        - name: departmentId
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: semester
+          in: query
+          schema:
+            type: ["integer", "null"]
+      responses:
+        "200":
+          description: List of subjects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Subject"
+    post:
+      operationId: createSubject
+      tags: [subjects]
+      summary: Create subject
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubjectInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subject"
+
+  /subjects/{id}:
+    patch:
+      operationId: updateSubject
+      tags: [subjects]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubjectUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subject"
+    delete:
+      operationId: deleteSubject
+      tags: [subjects]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+
+  # ATTENDANCE
+  /attendance:
+    get:
+      operationId: listAttendance
+      tags: [attendance]
+      summary: List attendance records
+      parameters:
+        - name: studentId
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: subjectId
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: date
+          in: query
+          schema:
+            type: ["string", "null"]
+        - name: month
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: year
+          in: query
+          schema:
+            type: ["integer", "null"]
+      responses:
+        "200":
+          description: Attendance records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Attendance"
+    post:
+      operationId: markAttendance
+      tags: [attendance]
+      summary: Mark attendance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AttendanceInput"
+      responses:
+        "201":
+          description: Marked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Attendance"
+
+  /attendance/summary:
+    get:
+      operationId: getAttendanceSummary
+      tags: [attendance]
+      summary: Get attendance summary per student/subject
+      parameters:
+        - name: studentId
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: subjectId
+          in: query
+          schema:
+            type: ["integer", "null"]
+      responses:
+        "200":
+          description: Attendance summary
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AttendanceSummary"
+
+  # TIMETABLE
+  /timetable:
+    get:
+      operationId: listTimetable
+      tags: [timetable]
+      summary: List timetable entries
+      parameters:
+        - name: departmentId
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: semester
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: facultyId
+          in: query
+          schema:
+            type: ["integer", "null"]
+      responses:
+        "200":
+          description: Timetable entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TimetableEntry"
+    post:
+      operationId: createTimetableEntry
+      tags: [timetable]
+      summary: Create timetable entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TimetableEntryInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimetableEntry"
+
+  /timetable/{id}:
+    delete:
+      operationId: deleteTimetableEntry
+      tags: [timetable]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+
+  # ASSIGNMENTS
+  /assignments:
+    get:
+      operationId: listAssignments
+      tags: [assignments]
+      summary: List assignments
+      parameters:
+        - name: subjectId
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: facultyId
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: semester
+          in: query
+          schema:
+            type: ["integer", "null"]
+      responses:
+        "200":
+          description: Assignments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Assignment"
+    post:
+      operationId: createAssignment
+      tags: [assignments]
+      summary: Create assignment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssignmentInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Assignment"
+
+  /assignments/{id}:
+    get:
+      operationId: getAssignment
+      tags: [assignments]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Assignment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Assignment"
+    patch:
+      operationId: updateAssignment
+      tags: [assignments]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssignmentUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Assignment"
+    delete:
+      operationId: deleteAssignment
+      tags: [assignments]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+
+  /assignments/{id}/submissions:
+    get:
+      operationId: listSubmissions
+      tags: [assignments]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Submissions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Submission"
+    post:
+      operationId: submitAssignment
+      tags: [assignments]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmissionInput"
+      responses:
+        "201":
+          description: Submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Submission"
+
+  /submissions/{id}/grade:
+    patch:
+      operationId: gradeSubmission
+      tags: [assignments]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GradeInput"
+      responses:
+        "200":
+          description: Graded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Submission"
+
+  # QUIZZES
+  /quizzes:
+    get:
+      operationId: listQuizzes
+      tags: [quizzes]
+      summary: List quizzes
+      parameters:
+        - name: subjectId
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: semester
+          in: query
+          schema:
+            type: ["integer", "null"]
+      responses:
+        "200":
+          description: Quizzes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Quiz"
+    post:
+      operationId: createQuiz
+      tags: [quizzes]
+      summary: Create quiz
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuizInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quiz"
+
+  /quizzes/{id}:
+    get:
+      operationId: getQuiz
+      tags: [quizzes]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Quiz
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quiz"
+
+  /quizzes/{id}/attempt:
+    post:
+      operationId: submitQuizAttempt
+      tags: [quizzes]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuizAttemptInput"
+      responses:
+        "201":
+          description: Attempt submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuizAttempt"
+
+  /quizzes/{id}/attempts:
+    get:
+      operationId: getQuizAttempts
+      tags: [quizzes]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Attempts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/QuizAttempt"
+
+  # RESULTS
+  /results:
+    get:
+      operationId: listResults
+      tags: [results]
+      summary: List results
+      parameters:
+        - name: studentId
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: subjectId
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: semester
+          in: query
+          schema:
+            type: ["integer", "null"]
+      responses:
+        "200":
+          description: Results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Result"
+    post:
+      operationId: createResult
+      tags: [results]
+      summary: Create/upload result
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResultInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Result"
+
+  # STUDY MATERIALS
+  /materials:
+    get:
+      operationId: listMaterials
+      tags: [materials]
+      summary: List study materials
+      parameters:
+        - name: subjectId
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: semester
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: search
+          in: query
+          schema:
+            type: ["string", "null"]
+      responses:
+        "200":
+          description: Materials
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Material"
+    post:
+      operationId: createMaterial
+      tags: [materials]
+      summary: Upload study material
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MaterialInput"
+      responses:
+        "201":
+          description: Uploaded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Material"
+
+  /materials/{id}:
+    delete:
+      operationId: deleteMaterial
+      tags: [materials]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+
+  # NOTICES
+  /notices:
+    get:
+      operationId: listNotices
+      tags: [notices]
+      summary: List notices
+      parameters:
+        - name: departmentId
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: pinned
+          in: query
+          schema:
+            type: ["boolean", "null"]
+      responses:
+        "200":
+          description: Notices
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notice"
+    post:
+      operationId: createNotice
+      tags: [notices]
+      summary: Create notice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NoticeInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notice"
+
+  /notices/{id}:
+    patch:
+      operationId: updateNotice
+      tags: [notices]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NoticeUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notice"
+    delete:
+      operationId: deleteNotice
+      tags: [notices]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+
+  # EVENTS
+  /events:
+    get:
+      operationId: listEvents
+      tags: [events]
+      summary: List events
+      parameters:
+        - name: month
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: year
+          in: query
+          schema:
+            type: ["integer", "null"]
+      responses:
+        "200":
+          description: Events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Event"
+    post:
+      operationId: createEvent
+      tags: [events]
+      summary: Create event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+
+  /events/{id}:
+    delete:
+      operationId: deleteEvent
+      tags: [events]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+
+  # LEAVES
+  /leaves:
+    get:
+      operationId: listLeaves
+      tags: [leaves]
+      summary: List leave applications
+      parameters:
+        - name: studentId
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: status
+          in: query
+          schema:
+            type: ["string", "null"]
+      responses:
+        "200":
+          description: Leave applications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Leave"
+    post:
+      operationId: applyLeave
+      tags: [leaves]
+      summary: Apply for leave
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LeaveInput"
+      responses:
+        "201":
+          description: Applied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Leave"
+
+  /leaves/{id}/status:
+    patch:
+      operationId: updateLeaveStatus
+      tags: [leaves]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LeaveStatusUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Leave"
+
+  # DASHBOARD ANALYTICS
+  /dashboard/admin:
+    get:
+      operationId: getAdminDashboard
+      tags: [dashboard]
+      summary: Admin dashboard stats
+      responses:
+        "200":
+          description: Admin dashboard
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDashboard"
+
+  /dashboard/student:
+    get:
+      operationId: getStudentDashboard
+      tags: [dashboard]
+      summary: Student dashboard stats
+      parameters:
+        - name: studentId
+          in: query
+          schema:
+            type: ["integer", "null"]
+      responses:
+        "200":
+          description: Student dashboard
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentDashboard"
+
+  /dashboard/faculty:
+    get:
+      operationId: getFacultyDashboard
+      tags: [dashboard]
+      summary: Faculty dashboard stats
+      parameters:
+        - name: facultyId
+          in: query
+          schema:
+            type: ["integer", "null"]
+      responses:
+        "200":
+          description: Faculty dashboard
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FacultyDashboard"
+
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
         status:
           type: string
-      required:
-        - status
 
+    LoginInput:
+      type: object
+      required: [email, password, role]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+        role:
+          type: string
+
+    AuthResponse:
+      type: object
+      required: [token, user]
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+
+    User:
+      type: object
+      required: [id, name, email, role]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+        avatar:
+          type: ["string", "null"]
+        departmentId:
+          type: ["integer", "null"]
+
+    Student:
+      type: object
+      required: [id, name, email, rollNumber, semester, departmentId]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        rollNumber:
+          type: string
+        phone:
+          type: ["string", "null"]
+        semester:
+          type: integer
+        departmentId:
+          type: integer
+        departmentName:
+          type: ["string", "null"]
+        avatar:
+          type: ["string", "null"]
+        enrolledAt:
+          type: string
+
+    StudentInput:
+      type: object
+      required: [name, email, rollNumber, semester, departmentId, password]
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        rollNumber:
+          type: string
+        phone:
+          type: ["string", "null"]
+        semester:
+          type: integer
+        departmentId:
+          type: integer
+        password:
+          type: string
+
+    StudentUpdate:
+      type: object
+      properties:
+        name:
+          type: ["string", "null"]
+        phone:
+          type: ["string", "null"]
+        semester:
+          type: ["integer", "null"]
+        departmentId:
+          type: ["integer", "null"]
+
+    StudentListResponse:
+      type: object
+      required: [students, total, page, limit]
+      properties:
+        students:
+          type: array
+          items:
+            $ref: "#/components/schemas/Student"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    Faculty:
+      type: object
+      required: [id, name, email, employeeId, departmentId]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        employeeId:
+          type: string
+        phone:
+          type: ["string", "null"]
+        designation:
+          type: ["string", "null"]
+        departmentId:
+          type: integer
+        departmentName:
+          type: ["string", "null"]
+        avatar:
+          type: ["string", "null"]
+        joinedAt:
+          type: string
+
+    FacultyInput:
+      type: object
+      required: [name, email, employeeId, departmentId, password]
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        employeeId:
+          type: string
+        phone:
+          type: ["string", "null"]
+        designation:
+          type: ["string", "null"]
+        departmentId:
+          type: integer
+        password:
+          type: string
+
+    FacultyUpdate:
+      type: object
+      properties:
+        name:
+          type: ["string", "null"]
+        phone:
+          type: ["string", "null"]
+        designation:
+          type: ["string", "null"]
+        departmentId:
+          type: ["integer", "null"]
+
+    Department:
+      type: object
+      required: [id, name, code]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        code:
+          type: string
+        hodName:
+          type: ["string", "null"]
+        studentCount:
+          type: ["integer", "null"]
+        facultyCount:
+          type: ["integer", "null"]
+
+    DepartmentInput:
+      type: object
+      required: [name, code]
+      properties:
+        name:
+          type: string
+        code:
+          type: string
+        hodId:
+          type: ["integer", "null"]
+
+    DepartmentUpdate:
+      type: object
+      properties:
+        name:
+          type: ["string", "null"]
+        code:
+          type: ["string", "null"]
+        hodId:
+          type: ["integer", "null"]
+
+    Subject:
+      type: object
+      required: [id, name, code, credits, semester, departmentId]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        code:
+          type: string
+        credits:
+          type: integer
+        semester:
+          type: integer
+        departmentId:
+          type: integer
+        departmentName:
+          type: ["string", "null"]
+        facultyName:
+          type: ["string", "null"]
+        facultyId:
+          type: ["integer", "null"]
+
+    SubjectInput:
+      type: object
+      required: [name, code, credits, semester, departmentId]
+      properties:
+        name:
+          type: string
+        code:
+          type: string
+        credits:
+          type: integer
+        semester:
+          type: integer
+        departmentId:
+          type: integer
+        facultyId:
+          type: ["integer", "null"]
+
+    SubjectUpdate:
+      type: object
+      properties:
+        name:
+          type: ["string", "null"]
+        credits:
+          type: ["integer", "null"]
+        facultyId:
+          type: ["integer", "null"]
+
+    Attendance:
+      type: object
+      required: [id, studentId, subjectId, date, status]
+      properties:
+        id:
+          type: integer
+        studentId:
+          type: integer
+        studentName:
+          type: ["string", "null"]
+        subjectId:
+          type: integer
+        subjectName:
+          type: ["string", "null"]
+        date:
+          type: string
+        status:
+          type: string
+        markedBy:
+          type: ["integer", "null"]
+
+    AttendanceInput:
+      type: object
+      required: [studentId, subjectId, date, status]
+      properties:
+        studentId:
+          type: integer
+        subjectId:
+          type: integer
+        date:
+          type: string
+        status:
+          type: string
+
+    AttendanceSummary:
+      type: object
+      required: [studentId, subjectId, totalClasses, attended, percentage]
+      properties:
+        studentId:
+          type: integer
+        studentName:
+          type: ["string", "null"]
+        subjectId:
+          type: integer
+        subjectName:
+          type: ["string", "null"]
+        totalClasses:
+          type: integer
+        attended:
+          type: integer
+        percentage:
+          type: number
+
+    TimetableEntry:
+      type: object
+      required: [id, subjectId, facultyId, dayOfWeek, startTime, endTime, semester, departmentId]
+      properties:
+        id:
+          type: integer
+        subjectId:
+          type: integer
+        subjectName:
+          type: ["string", "null"]
+        facultyId:
+          type: integer
+        facultyName:
+          type: ["string", "null"]
+        dayOfWeek:
+          type: string
+        startTime:
+          type: string
+        endTime:
+          type: string
+        room:
+          type: ["string", "null"]
+        semester:
+          type: integer
+        departmentId:
+          type: integer
+
+    TimetableEntryInput:
+      type: object
+      required: [subjectId, facultyId, dayOfWeek, startTime, endTime, semester, departmentId]
+      properties:
+        subjectId:
+          type: integer
+        facultyId:
+          type: integer
+        dayOfWeek:
+          type: string
+        startTime:
+          type: string
+        endTime:
+          type: string
+        room:
+          type: ["string", "null"]
+        semester:
+          type: integer
+        departmentId:
+          type: integer
+
+    Assignment:
+      type: object
+      required: [id, title, subjectId, facultyId, dueDate, maxMarks]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        subjectId:
+          type: integer
+        subjectName:
+          type: ["string", "null"]
+        facultyId:
+          type: integer
+        facultyName:
+          type: ["string", "null"]
+        dueDate:
+          type: string
+        maxMarks:
+          type: integer
+        semester:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+        submissionCount:
+          type: ["integer", "null"]
+
+    AssignmentInput:
+      type: object
+      required: [title, subjectId, facultyId, dueDate, maxMarks]
+      properties:
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        subjectId:
+          type: integer
+        facultyId:
+          type: integer
+        dueDate:
+          type: string
+        maxMarks:
+          type: integer
+        semester:
+          type: ["integer", "null"]
+
+    AssignmentUpdate:
+      type: object
+      properties:
+        title:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+        dueDate:
+          type: ["string", "null"]
+        maxMarks:
+          type: ["integer", "null"]
+
+    Submission:
+      type: object
+      required: [id, assignmentId, studentId, submittedAt]
+      properties:
+        id:
+          type: integer
+        assignmentId:
+          type: integer
+        studentId:
+          type: integer
+        studentName:
+          type: ["string", "null"]
+        submittedAt:
+          type: string
+        fileUrl:
+          type: ["string", "null"]
+        marks:
+          type: ["integer", "null"]
+        feedback:
+          type: ["string", "null"]
+        status:
+          type: string
+
+    SubmissionInput:
+      type: object
+      required: [studentId]
+      properties:
+        studentId:
+          type: integer
+        fileUrl:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+
+    GradeInput:
+      type: object
+      required: [marks]
+      properties:
+        marks:
+          type: integer
+        feedback:
+          type: ["string", "null"]
+
+    Quiz:
+      type: object
+      required: [id, title, subjectId, facultyId, durationMinutes, totalMarks]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        subjectId:
+          type: integer
+        subjectName:
+          type: ["string", "null"]
+        facultyId:
+          type: integer
+        durationMinutes:
+          type: integer
+        totalMarks:
+          type: integer
+        semester:
+          type: ["integer", "null"]
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuizQuestion"
+
+    QuizQuestion:
+      type: object
+      required: [id, question, options, correctOption]
+      properties:
+        id:
+          type: integer
+        question:
+          type: string
+        options:
+          type: array
+          items:
+            type: string
+        correctOption:
+          type: integer
+        marks:
+          type: integer
+
+    QuizInput:
+      type: object
+      required: [title, subjectId, facultyId, durationMinutes, totalMarks, questions]
+      properties:
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        subjectId:
+          type: integer
+        facultyId:
+          type: integer
+        durationMinutes:
+          type: integer
+        totalMarks:
+          type: integer
+        semester:
+          type: ["integer", "null"]
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuizQuestionInput"
+
+    QuizQuestionInput:
+      type: object
+      required: [question, options, correctOption]
+      properties:
+        question:
+          type: string
+        options:
+          type: array
+          items:
+            type: string
+        correctOption:
+          type: integer
+        marks:
+          type: integer
+
+    QuizAttempt:
+      type: object
+      required: [id, quizId, studentId, score, submittedAt]
+      properties:
+        id:
+          type: integer
+        quizId:
+          type: integer
+        studentId:
+          type: integer
+        studentName:
+          type: ["string", "null"]
+        score:
+          type: integer
+        totalMarks:
+          type: integer
+        submittedAt:
+          type: string
+        answers:
+          type: array
+          items:
+            type: integer
+
+    QuizAttemptInput:
+      type: object
+      required: [studentId, answers]
+      properties:
+        studentId:
+          type: integer
+        answers:
+          type: array
+          items:
+            type: integer
+
+    Result:
+      type: object
+      required: [id, studentId, subjectId, semester, internalMarks, externalMarks, totalMarks, grade]
+      properties:
+        id:
+          type: integer
+        studentId:
+          type: integer
+        studentName:
+          type: ["string", "null"]
+        subjectId:
+          type: integer
+        subjectName:
+          type: ["string", "null"]
+        semester:
+          type: integer
+        internalMarks:
+          type: number
+        externalMarks:
+          type: number
+        totalMarks:
+          type: number
+        grade:
+          type: string
+        passed:
+          type: boolean
+
+    ResultInput:
+      type: object
+      required: [studentId, subjectId, semester, internalMarks, externalMarks]
+      properties:
+        studentId:
+          type: integer
+        subjectId:
+          type: integer
+        semester:
+          type: integer
+        internalMarks:
+          type: number
+        externalMarks:
+          type: number
+
+    Material:
+      type: object
+      required: [id, title, subjectId, type, uploadedBy]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        subjectId:
+          type: integer
+        subjectName:
+          type: ["string", "null"]
+        type:
+          type: string
+        fileUrl:
+          type: ["string", "null"]
+        uploadedBy:
+          type: integer
+        uploaderName:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        semester:
+          type: ["integer", "null"]
+
+    MaterialInput:
+      type: object
+      required: [title, subjectId, type, uploadedBy]
+      properties:
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        subjectId:
+          type: integer
+        type:
+          type: string
+        fileUrl:
+          type: ["string", "null"]
+        uploadedBy:
+          type: integer
+        semester:
+          type: ["integer", "null"]
+
+    Notice:
+      type: object
+      required: [id, title, content, createdBy, createdAt]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        content:
+          type: string
+        isPinned:
+          type: boolean
+        departmentId:
+          type: ["integer", "null"]
+        departmentName:
+          type: ["string", "null"]
+        semester:
+          type: ["integer", "null"]
+        createdBy:
+          type: integer
+        createdByName:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    NoticeInput:
+      type: object
+      required: [title, content, createdBy]
+      properties:
+        title:
+          type: string
+        content:
+          type: string
+        isPinned:
+          type: boolean
+        departmentId:
+          type: ["integer", "null"]
+        semester:
+          type: ["integer", "null"]
+        createdBy:
+          type: integer
+
+    NoticeUpdate:
+      type: object
+      properties:
+        title:
+          type: ["string", "null"]
+        content:
+          type: ["string", "null"]
+        isPinned:
+          type: ["boolean", "null"]
+
+    Event:
+      type: object
+      required: [id, title, startDate, type]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        startDate:
+          type: string
+        endDate:
+          type: ["string", "null"]
+        type:
+          type: string
+        departmentId:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+
+    EventInput:
+      type: object
+      required: [title, startDate, type]
+      properties:
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        startDate:
+          type: string
+        endDate:
+          type: ["string", "null"]
+        type:
+          type: string
+        departmentId:
+          type: ["integer", "null"]
+
+    Leave:
+      type: object
+      required: [id, studentId, fromDate, toDate, reason, status]
+      properties:
+        id:
+          type: integer
+        studentId:
+          type: integer
+        studentName:
+          type: ["string", "null"]
+        fromDate:
+          type: string
+        toDate:
+          type: string
+        reason:
+          type: string
+        status:
+          type: string
+        reviewedBy:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+
+    LeaveInput:
+      type: object
+      required: [studentId, fromDate, toDate, reason]
+      properties:
+        studentId:
+          type: integer
+        fromDate:
+          type: string
+        toDate:
+          type: string
+        reason:
+          type: string
+
+    LeaveStatusUpdate:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+        reviewedBy:
+          type: ["integer", "null"]
+
+    AdminDashboard:
+      type: object
+      required: [totalStudents, totalFaculty, totalDepartments, totalSubjects]
+      properties:
+        totalStudents:
+          type: integer
+        totalFaculty:
+          type: integer
+        totalDepartments:
+          type: integer
+        totalSubjects:
+          type: integer
+        recentNotices:
+          type: array
+          items:
+            $ref: "#/components/schemas/Notice"
+        upcomingEvents:
+          type: array
+          items:
+            $ref: "#/components/schemas/Event"
+        attendanceRate:
+          type: number
+        departmentBreakdown:
+          type: array
+          items:
+            $ref: "#/components/schemas/DeptStats"
+        pendingLeaves:
+          type: integer
+
+    DeptStats:
+      type: object
+      required: [departmentId, departmentName, studentCount, facultyCount]
+      properties:
+        departmentId:
+          type: integer
+        departmentName:
+          type: string
+        studentCount:
+          type: integer
+        facultyCount:
+          type: integer
+
+    StudentDashboard:
+      type: object
+      required: [student, attendanceOverall, upcomingAssignments, recentResults]
+      properties:
+        student:
+          $ref: "#/components/schemas/Student"
+        attendanceOverall:
+          type: number
+        subjectAttendance:
+          type: array
+          items:
+            $ref: "#/components/schemas/AttendanceSummary"
+        upcomingAssignments:
+          type: array
+          items:
+            $ref: "#/components/schemas/Assignment"
+        recentResults:
+          type: array
+          items:
+            $ref: "#/components/schemas/Result"
+        pendingQuizzes:
+          type: array
+          items:
+            $ref: "#/components/schemas/Quiz"
+        todayClasses:
+          type: array
+          items:
+            $ref: "#/components/schemas/TimetableEntry"
+        recentNotices:
+          type: array
+          items:
+            $ref: "#/components/schemas/Notice"
+
+    FacultyDashboard:
+      type: object
+      required: [faculty, totalStudents, pendingGrading]
+      properties:
+        faculty:
+          $ref: "#/components/schemas/Faculty"
+        totalStudents:
+          type: integer
+        pendingGrading:
+          type: integer
+        todayClasses:
+          type: array
+          items:
+            $ref: "#/components/schemas/TimetableEntry"
+        recentAssignments:
+          type: array
+          items:
+            $ref: "#/components/schemas/Assignment"
+        recentNotices:
+          type: array
+          items:
+            $ref: "#/components/schemas/Notice"
+        attendanceTrend:
+          type: array
+          items:
+            $ref: "#/components/schemas/AttendanceSummary"

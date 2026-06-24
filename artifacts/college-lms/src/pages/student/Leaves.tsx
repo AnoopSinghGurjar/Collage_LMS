@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useListLeaves, useCreateLeave } from '@workspace/api-client-react';
+import { useListLeaves, useApplyLeave } from '@workspace/api-client-react';
 import { useAuth } from '@/context/AuthContext';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 import { DataTable } from '@/components/DataTable';
@@ -27,7 +27,7 @@ export default function StudentLeaves() {
     studentId: studentId
   });
 
-  const createLeave = useCreateLeave({
+  const createLeave = useApplyLeave({
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ['/api/leaves'] });

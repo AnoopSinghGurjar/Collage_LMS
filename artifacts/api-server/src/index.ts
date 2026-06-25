@@ -1,3 +1,5 @@
+import "dotenv/config";
+console.log("DATABASE_URL =", process.env.DATABASE_URL);
 import app from "./app";
 import { logger } from "./lib/logger";
 

@@ -13,14 +13,14 @@ import { useQueryClient } from '@tanstack/react-query';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 const TIME_SLOTS = [
-  '09:00 - 10:00', '10:00 - 11:00', '11:00 - 12:00', '12:00 - 13:00', 
+  '09:00 - 10:00', '10:00 - 11:00', '11:00 - 12:00', '12:00 - 13:00',
   '13:00 - 14:00', '14:00 - 15:00', '15:00 - 16:00', '16:00 - 17:00'
 ];
 
 export default function AdminTimetable() {
   const queryClient = useQueryClient();
   const [departmentId, setDepartmentId] = useState<string>("1"); // Default to something to show data
-  const [semester, setSemester] = useState<string>("1");
+  const [semester, setSemester] = useState<string>("3");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -31,6 +31,10 @@ export default function AdminTimetable() {
     departmentId: Number(departmentId),
     semester: Number(semester)
   });
+
+  console.log("Department:", departmentId);
+  console.log("Semester:", semester);
+  console.log("Timetable:", timetable);
 
   const { data: depts } = useListDepartments();
   const { data: subjects } = useListSubjects({ departmentId: Number(departmentId), semester: Number(semester) });
@@ -71,10 +75,70 @@ export default function AdminTimetable() {
     });
   };
 
+  const handleExcelUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const response = await fetch(
+        "http://localhost:3000/api/timetable/upload",
+        {
+          method: "POST",
+          body: formData,
+        },
+      );
+
+      const data = await response.json();
+
+      console.log(data);
+
+      if (!response.ok) {
+        throw new Error(data.error || "Upload failed");
+      }
+
+      toast.success(
+        `Excel uploaded successfully (${data.inserted}/${data.totalRows} rows)`
+      );
+
+      // Refresh React Query cache
+      await queryClient.invalidateQueries({
+        queryKey: ["/api/timetable"],
+      });
+
+      // Force refresh so timetable updates immediately
+      window.location.reload();
+
+    } catch (err) {
+      console.error(err);
+      toast.error("Excel upload failed");
+    }
+  };
+
+  // const getEntry = (day: string, slotStr: string) => {
+  //   if (!timetable) return null;
+  //   const start = slotStr.split(' - ')[0] + ':00';
+  //   return timetable.find(t => t.dayOfWeek === day && t.startTime.startsWith(start));
+  // };
+
   const getEntry = (day: string, slotStr: string) => {
     if (!timetable) return null;
-    const start = slotStr.split(' - ')[0] + ':00';
-    return timetable.find(t => t.dayOfWeek === day && t.startTime.startsWith(start));
+
+    // Slot ka start time nikaalo
+    const start = slotStr.split(" - ")[0].trim();
+
+    return timetable.find((t) => {
+      const dbTime = t.startTime.substring(0, 5); // "09:00"
+      return (
+        t.dayOfWeek.trim().toLowerCase() === day.trim().toLowerCase() &&
+        dbTime === start
+      );
+    });
   };
 
   return (
@@ -100,7 +164,7 @@ export default function AdminTimetable() {
             <SelectValue placeholder="Semester" />
           </SelectTrigger>
           <SelectContent>
-            {[1,2,3,4,5,6,7,8].map(s => <SelectItem key={s} value={String(s)}>Semester {s}</SelectItem>)}
+            {[1, 2, 3, 4, 5, 6, 7, 8].map(s => <SelectItem key={s} value={String(s)}>Semester {s}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
@@ -131,9 +195,9 @@ export default function AdminTimetable() {
                             <div className="font-semibold text-primary text-xs truncate" title={entry.subjectName || ''}>{entry.subjectName}</div>
                             <div className="text-[10px] text-muted-foreground mt-1 truncate" title={entry.facultyName || ''}>{entry.facultyName}</div>
                             <div className="text-[10px] text-muted-foreground font-mono mt-1">Rm: {entry.room || 'TBA'}</div>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               className="absolute top-1 right-1 h-5 w-5 opacity-0 group-hover:opacity-100 bg-background border border-border hover:bg-destructive hover:text-destructive-foreground transition-opacity"
                               onClick={() => deleteEntry.mutate({ id: entry.id })}
                             >
@@ -156,11 +220,55 @@ export default function AdminTimetable() {
       )}
 
       <Modal open={isAddModalOpen} onOpenChange={setIsAddModalOpen} title="Add Timetable Entry">
+        <div className="mb-4 flex justify-end gap-2">
+
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => {
+              window.open(
+                "http://localhost:3000/api/timetable/template",
+                "_blank",
+              );
+            }}
+          >
+            Download Template
+          </Button>
+
+          <Button
+            type="button"
+            variant="default"
+            onClick={() => {
+              window.open(
+                "http://localhost:3000/api/timetable/export",
+                "_blank",
+              );
+            }}
+          >
+            Download Timetable
+          </Button>
+
+          <input
+            type="file"
+            id="excelUpload"
+            accept=".xlsx,.xls"
+            style={{ display: "none" }}
+            onChange={handleExcelUpload}
+          />
+
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => document.getElementById("excelUpload")?.click()}
+          >
+            Upload Excel
+          </Button>
+        </div>
         <form onSubmit={handleSubmit} className="space-y-4 pt-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Department</Label>
-              <Select value={formData.departmentId} onValueChange={v => setFormData({...formData, departmentId: v})}>
+              <Select value={formData.departmentId} onValueChange={v => setFormData({ ...formData, departmentId: v })}>
                 <SelectTrigger><SelectValue placeholder="Department" /></SelectTrigger>
                 <SelectContent>
                   {depts?.map(d => <SelectItem key={d.id} value={String(d.id)}>{d.name}</SelectItem>)}
@@ -169,10 +277,10 @@ export default function AdminTimetable() {
             </div>
             <div className="space-y-2">
               <Label>Semester</Label>
-              <Select value={formData.semester} onValueChange={v => setFormData({...formData, semester: v})}>
+              <Select value={formData.semester} onValueChange={v => setFormData({ ...formData, semester: v })}>
                 <SelectTrigger><SelectValue placeholder="Semester" /></SelectTrigger>
                 <SelectContent>
-                  {[1,2,3,4,5,6,7,8].map(s => <SelectItem key={s} value={String(s)}>Semester {s}</SelectItem>)}
+                  {[1, 2, 3, 4, 5, 6, 7, 8].map(s => <SelectItem key={s} value={String(s)}>Semester {s}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -181,7 +289,7 @@ export default function AdminTimetable() {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Subject</Label>
-              <Select value={formData.subjectId} onValueChange={v => setFormData({...formData, subjectId: v})}>
+              <Select value={formData.subjectId} onValueChange={v => setFormData({ ...formData, subjectId: v })}>
                 <SelectTrigger><SelectValue placeholder="Select Subject" /></SelectTrigger>
                 <SelectContent>
                   {subjects?.map(s => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}
@@ -190,7 +298,7 @@ export default function AdminTimetable() {
             </div>
             <div className="space-y-2">
               <Label>Faculty</Label>
-              <Select value={formData.facultyId} onValueChange={v => setFormData({...formData, facultyId: v})}>
+              <Select value={formData.facultyId} onValueChange={v => setFormData({ ...formData, facultyId: v })}>
                 <SelectTrigger><SelectValue placeholder="Select Faculty" /></SelectTrigger>
                 <SelectContent>
                   {faculty?.map(f => <SelectItem key={f.id} value={String(f.id)}>{f.name}</SelectItem>)}
@@ -202,7 +310,7 @@ export default function AdminTimetable() {
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label>Day</Label>
-              <Select value={formData.dayOfWeek} onValueChange={v => setFormData({...formData, dayOfWeek: v})}>
+              <Select value={formData.dayOfWeek} onValueChange={v => setFormData({ ...formData, dayOfWeek: v })}>
                 <SelectTrigger><SelectValue placeholder="Day" /></SelectTrigger>
                 <SelectContent>
                   {DAYS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
@@ -211,17 +319,17 @@ export default function AdminTimetable() {
             </div>
             <div className="space-y-2">
               <Label>Start Time</Label>
-              <Input type="time" required value={formData.startTime} onChange={e => setFormData({...formData, startTime: e.target.value})} step="3600" />
+              <Input type="time" required value={formData.startTime} onChange={e => setFormData({ ...formData, startTime: e.target.value })} step="3600" />
             </div>
             <div className="space-y-2">
               <Label>End Time</Label>
-              <Input type="time" required value={formData.endTime} onChange={e => setFormData({...formData, endTime: e.target.value})} step="3600" />
+              <Input type="time" required value={formData.endTime} onChange={e => setFormData({ ...formData, endTime: e.target.value })} step="3600" />
             </div>
           </div>
 
           <div className="space-y-2">
             <Label>Room / Hall</Label>
-            <Input value={formData.room} onChange={e => setFormData({...formData, room: e.target.value})} placeholder="e.g. CS-101" />
+            <Input value={formData.room} onChange={e => setFormData({ ...formData, room: e.target.value })} placeholder="e.g. CS-101" />
           </div>
 
           <div className="flex justify-end pt-4 gap-2">

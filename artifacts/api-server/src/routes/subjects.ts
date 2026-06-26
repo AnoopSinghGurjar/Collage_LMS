@@ -1,6 +1,13 @@
 import { Router, type IRouter } from "express";
 import { eq, and } from "drizzle-orm";
-import { db, subjectsTable, departmentsTable, facultyTable, usersTable } from "@workspace/db";
+import {
+  db,
+  subjectsTable,
+  departmentsTable,
+  facultyTable,
+  usersTable,
+  studentsTable,
+} from "@workspace/db";
 
 const router: IRouter = Router();
 
@@ -86,6 +93,63 @@ router.delete("/subjects/:id", async (req, res): Promise<void> => {
   const id = parseInt(raw, 10);
   await db.delete(subjectsTable).where(eq(subjectsTable.id, id));
   res.json({ message: "Deleted" });
+});
+
+router.get("/faculty/my-subjects", async (req, res): Promise<void> => {
+  const { facultyId } = req.query as Record<string, string>;
+
+  if (!facultyId) {
+    res.status(400).json({
+      error: "facultyId is required",
+    });
+    return;
+  }
+
+  const subjects = await db
+    .select({
+      id: subjectsTable.id,
+      name: subjectsTable.name,
+      code: subjectsTable.code,
+      credits: subjectsTable.credits,
+      semester: subjectsTable.semester,
+      departmentId: subjectsTable.departmentId,
+      facultyId: subjectsTable.facultyId,
+      departmentName: departmentsTable.name,
+    })
+    .from(subjectsTable)
+    .leftJoin(
+      departmentsTable,
+      eq(subjectsTable.departmentId, departmentsTable.id),
+    );
+
+  const mySubjects = subjects.filter(
+    (s) => s.facultyId === Number(facultyId),
+  );
+
+  const result = await Promise.all(
+    mySubjects.map(async (subject) => {
+      const students = await db
+        .select()
+        .from(studentsTable)
+        .where(
+          eq(
+            studentsTable.departmentId,
+            subject.departmentId,
+          ),
+        );
+
+      const totalStudents = students.filter(
+        (s) => s.semester === subject.semester,
+      ).length;
+
+      return {
+        ...subject,
+        totalStudents,
+      };
+    }),
+  );
+
+  res.json(result);
 });
 
 export default router;

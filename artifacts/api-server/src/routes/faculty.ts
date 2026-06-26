@@ -1,6 +1,13 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
-import { db, usersTable, facultyTable, departmentsTable } from "@workspace/db";
+import {
+  db,
+  usersTable,
+  facultyTable,
+  departmentsTable,
+  subjectsTable,
+  studentsTable,
+} from "@workspace/db";
 import crypto from "crypto";
 
 function hashPassword(password: string): string {
@@ -27,6 +34,48 @@ async function getFacultyWithDetails(facultyId: number) {
     joinedAt: fac.joinedAt.toISOString(),
   };
 }
+
+router.get("/faculty/my-subjects", async (req, res): Promise<void> => {
+  const facultyId = Number(req.query.facultyId);
+
+  if (!facultyId) {
+    res.status(400).json({ error: "facultyId required" });
+    return;
+  }
+
+  const subjects = await db
+    .select()
+    .from(subjectsTable)
+    .where(eq(subjectsTable.facultyId, facultyId));
+
+  const result = await Promise.all(
+    subjects.map(async (subject) => {
+      const [dept] = await db
+        .select()
+        .from(departmentsTable)
+        .where(eq(departmentsTable.id, subject.departmentId));
+
+      const students = await db
+        .select()
+        .from(studentsTable)
+        .where(eq(studentsTable.departmentId, subject.departmentId));
+
+      return {
+        id: subject.id,
+        name: subject.name,
+        code: subject.code,
+        credits: subject.credits,
+        semester: subject.semester,
+        departmentName: dept?.name ?? "",
+        totalStudents: students.filter(
+          (s) => s.semester === subject.semester
+        ).length,
+      };
+    })
+  );
+
+  res.json(result);
+});
 
 router.get("/faculty", async (req, res): Promise<void> => {
   const { departmentId, search } = req.query as Record<string, string>;

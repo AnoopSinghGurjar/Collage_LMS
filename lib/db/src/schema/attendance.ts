@@ -2,13 +2,28 @@ import { pgTable, serial, integer, text, date, timestamp } from "drizzle-orm/pg-
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
+// export const attendanceTable = pgTable("attendance", {
+//   id: serial("id").primaryKey(),
+//   studentId: integer("student_id").notNull(),
+//   subjectId: integer("subject_id").notNull(),
+//   date: text("date").notNull(), // YYYY-MM-DD
+//   status: text("status").notNull().default("present"), // present | absent | late
+//   markedBy: integer("marked_by"),
+//   createdAt: timestamp("created_at").defaultNow().notNull(),
+// });
 export const attendanceTable = pgTable("attendance", {
   id: serial("id").primaryKey(),
+
   studentId: integer("student_id").notNull(),
+
   subjectId: integer("subject_id").notNull(),
-  date: text("date").notNull(), // YYYY-MM-DD
-  status: text("status").notNull().default("present"), // present | absent | late
+
+  date: text("date").notNull(),
+
+  status: text("status").notNull().default("present"),
+
   markedBy: integer("marked_by"),
+
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

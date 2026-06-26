@@ -32,6 +32,7 @@ import StudentNotices from "@/pages/student/Notices";
 import StudentLeaves from "@/pages/student/Leaves";
 
 // Faculty
+import FacultyMySubjects from "@/pages/faculty/MySubjects";
 import FacultyDashboard from "@/pages/faculty/Dashboard";
 import FacultyAttendance from "@/pages/faculty/Attendance";
 import FacultyAssignments from "@/pages/faculty/Assignments";
@@ -155,6 +156,16 @@ function App() {
                   <Layout><FacultyDashboard /></Layout>
                 </ProtectedRoute>
               </Route>
+
+              <Route path="/faculty/my-subjects">
+  <ProtectedRoute allowedRoles={["faculty"]}>
+    <Layout>
+      <FacultyMySubjects />
+    </Layout>
+  </ProtectedRoute>
+</Route>
+
+
               <Route path="/faculty/attendance">
                 <ProtectedRoute allowedRoles={["faculty"]}>
                   <Layout><FacultyAttendance /></Layout>

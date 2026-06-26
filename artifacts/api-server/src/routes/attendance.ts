@@ -1,8 +1,37 @@
 import { Router, type IRouter } from "express";
 import { eq, and } from "drizzle-orm";
-import { db, attendanceTable, studentsTable, subjectsTable, usersTable } from "@workspace/db";
+import {
+  db,
+  attendanceTable,
+  studentsTable,
+  subjectsTable,
+  usersTable,
+} from "@workspace/db";
 
 const router: IRouter = Router();
+
+router.get("/attendance/history", async (req, res): Promise<void> => {
+  const { subjectId, date } = req.query as Record<string, string>;
+
+  if (!subjectId || !date) {
+    res.status(400).json({
+      error: "subjectId and date required",
+    });
+    return;
+  }
+
+  const records = await db
+    .select()
+    .from(attendanceTable)
+    .where(
+      and(
+        eq(attendanceTable.subjectId, Number(subjectId)),
+        eq(attendanceTable.date, date)
+      )
+    );
+
+  res.json(records);
+});
 
 router.get("/attendance", async (req, res): Promise<void> => {
   const { studentId, subjectId, date, month, year } = req.query as Record<string, string>;
@@ -42,6 +71,116 @@ router.get("/attendance", async (req, res): Promise<void> => {
   );
 
   res.json(enriched);
+});
+
+router.get("/attendance/students", async (req, res): Promise<void> => {
+  const subjectId = Number(req.query.subjectId);
+
+  if (!subjectId) {
+    res.status(400).json({
+      error: "subjectId required",
+    });
+    return;
+  }
+
+  const [subject] = await db
+    .select()
+    .from(subjectsTable)
+    .where(eq(subjectsTable.id, subjectId));
+
+  if (!subject) {
+    res.status(404).json({
+      error: "Subject not found",
+    });
+    return;
+  }
+
+  const students = await db
+    .select()
+    .from(studentsTable)
+    .where(eq(studentsTable.departmentId, subject.departmentId));
+
+  const result = await Promise.all(
+    students
+      .filter((s) => s.semester === subject.semester)
+      .map(async (student) => {
+        const [user] = await db
+          .select()
+          .from(usersTable)
+          .where(eq(usersTable.id, student.userId));
+
+        return {
+          studentId: student.id,
+          name: user?.name ?? "",
+          rollNumber: student.rollNumber,
+        };
+      })
+  );
+
+  res.json(result);
+});
+
+router.post("/attendance/bulk", async (req, res): Promise<void> => {
+  try {
+    const { subjectId, markedBy, attendance } = req.body;
+
+    if (!subjectId || !attendance || !Array.isArray(attendance)) {
+      res.status(400).json({
+        error: "Invalid data",
+      });
+      return;
+    }
+
+    const selectedDate =
+      req.body.date || new Date().toISOString().split("T")[0];
+
+    for (const item of attendance) {
+
+      const existing = await db
+        .select()
+        .from(attendanceTable)
+        .where(
+          and(
+            eq(attendanceTable.studentId, item.studentId),
+            eq(attendanceTable.subjectId, subjectId),
+            eq(attendanceTable.date, selectedDate)
+          )
+        );
+
+      if (existing.length > 0) {
+
+        await db
+          .update(attendanceTable)
+          .set({
+            status: item.status,
+            markedBy,
+          })
+          .where(eq(attendanceTable.id, existing[0].id));
+
+      } else {
+
+        await db.insert(attendanceTable).values({
+          studentId: item.studentId,
+          subjectId,
+          date: selectedDate,
+          status: item.status,
+          markedBy,
+        });
+
+      }
+    }
+
+    res.json({
+      success: true,
+      total: attendance.length,
+    });
+  } catch (err) {
+    console.error(err);
+
+    res.status(500).json({
+      error: "Failed to save attendance",
+    });
+  }
 });
 
 router.post("/attendance", async (req, res): Promise<void> => {

@@ -47,6 +47,7 @@ const studentNav = [
 
 const facultyNav = [
   { href: "/faculty", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/faculty/my-subjects", label: "My Subjects", icon: BookOpen },
   { href: "/faculty/attendance", label: "Attendance", icon: CheckSquare },
   { href: "/faculty/assignments", label: "Assignments", icon: FileText },
   { href: "/faculty/quizzes", label: "Quizzes", icon: HelpCircle },

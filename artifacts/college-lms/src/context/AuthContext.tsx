@@ -10,8 +10,15 @@ interface AuthUser extends User {
 interface AuthState {
   user: AuthUser | null;
   token: string | null;
+
   studentId?: number;
   facultyId?: number;
+
+  semester?: number;
+  rollNumber?: string;
+
+  employeeId?: string;
+  designation?: string;
 }
 
 interface AuthContextType extends AuthState {
@@ -36,17 +43,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const token = localStorage.getItem("lms_token");
       const userStr = localStorage.getItem("lms_user");
       const profileIdStr = localStorage.getItem("lms_profile_id");
+      const semesterStr = localStorage.getItem("lms_semester");
+      const rollNumber = localStorage.getItem("lms_roll_number");
+      const employeeId = localStorage.getItem("lms_employee_id");
+      const designation = localStorage.getItem("lms_designation");
 
       if (token && userStr) {
         try {
           const user = JSON.parse(userStr);
           const profileId = profileIdStr ? parseInt(profileIdStr, 10) : undefined;
-          
+
           setState({
             user,
             token,
             studentId: user.role === "student" ? profileId : undefined,
             facultyId: user.role === "faculty" ? profileId : undefined,
+
+            semester: semesterStr ? Number(semesterStr) : undefined,
+            rollNumber: rollNumber ?? undefined,
+
+            employeeId: employeeId ?? undefined,
+            designation: designation ?? undefined,
           });
         } catch (err) {
           localStorage.removeItem("lms_token");
@@ -65,19 +82,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const res = await apiLogin(data);
       localStorage.setItem("lms_token", res.token);
       localStorage.setItem("lms_user", JSON.stringify(res.user));
-      
+
       let profileId = res.user.id;
-      
+
       try {
         if (res.user.role === "student") {
           const studentsRes = await listStudents({ search: res.user.email });
+
           if (studentsRes.students && studentsRes.students.length > 0) {
-            profileId = studentsRes.students[0].id;
+            const student = studentsRes.students[0];
+
+            profileId = student.id;
+
+            localStorage.setItem(
+              "lms_semester",
+              student.semester.toString(),
+            );
+
+            localStorage.setItem(
+              "lms_roll_number",
+              student.rollNumber,
+            );
           }
         } else if (res.user.role === "faculty") {
-          const facultyRes = await listFaculty({ search: res.user.email });
+          const facultyRes = await listFaculty({
+            search: res.user.email,
+          });
+
           if (facultyRes && facultyRes.length > 0) {
-            profileId = facultyRes[0].id;
+            const faculty = facultyRes[0];
+
+            profileId = faculty.id;
+
+            localStorage.setItem(
+              "lms_employee_id",
+              faculty.employeeId,
+            );
+
+            localStorage.setItem(
+              "lms_designation",
+              faculty.designation ?? "",
+            );
           }
         }
       } catch (err) {
@@ -85,14 +130,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       localStorage.setItem("lms_profile_id", profileId.toString());
-      
+
       setState({
         user: res.user,
         token: res.token,
-        studentId: res.user.role === "student" ? profileId : undefined,
-        facultyId: res.user.role === "faculty" ? profileId : undefined,
+
+        studentId:
+          res.user.role === "student" ? profileId : undefined,
+
+        facultyId:
+          res.user.role === "faculty" ? profileId : undefined,
+
+        semester:
+          res.user.role === "student"
+            ? Number(localStorage.getItem("lms_semester"))
+            : undefined,
+
+        rollNumber:
+          res.user.role === "student"
+            ? localStorage.getItem("lms_roll_number") ?? undefined
+            : undefined,
+
+        employeeId:
+          res.user.role === "faculty"
+            ? localStorage.getItem("lms_employee_id") ?? undefined
+            : undefined,
+
+        designation:
+          res.user.role === "faculty"
+            ? localStorage.getItem("lms_designation") ?? undefined
+            : undefined,
       });
-      
+
       if (res.user.role === "admin" || res.user.role === "hod") {
         setLocation("/admin");
       } else if (res.user.role === "student") {
@@ -109,6 +178,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem("lms_token");
     localStorage.removeItem("lms_user");
     localStorage.removeItem("lms_profile_id");
+    localStorage.removeItem("lms_semester");
+    localStorage.removeItem("lms_roll_number");
+    localStorage.removeItem("lms_employee_id");
+localStorage.removeItem("lms_designation");
     setState({ user: null, token: null });
     setLocation("/login");
   };

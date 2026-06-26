@@ -251,9 +251,23 @@ router.get("/timetable/template", async (_req, res) => {
   res.send(buffer);
 });
 
-router.get("/timetable/export", async (_req, res): Promise<void> => {
+router.get("/timetable/export", async (req, res): Promise<void> => {
   try {
-    const timetable = await db.select().from(timetableTable);
+    const all = await db.select().from(timetableTable);
+
+const timetable = all
+  .filter(
+    (t) =>
+      !departmentId || t.departmentId === Number(departmentId),
+  )
+  .filter(
+    (t) =>
+      !semester || t.semester === Number(semester),
+  )
+  .filter(
+    (t) =>
+      !facultyId || t.facultyId === Number(facultyId),
+  );
 
     const rows = [];
 

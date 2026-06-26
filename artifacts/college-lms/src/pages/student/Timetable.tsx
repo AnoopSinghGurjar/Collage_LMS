@@ -2,33 +2,58 @@ import React from 'react';
 import { useListTimetable } from '@workspace/api-client-react';
 import { useAuth } from '@/context/AuthContext';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
+import { Button } from "@/components/ui/button";
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 const TIME_SLOTS = [
-  '09:00 - 10:00', '10:00 - 11:00', '11:00 - 12:00', '12:00 - 13:00', 
+  '09:00 - 10:00', '10:00 - 11:00', '11:00 - 12:00', '12:00 - 13:00',
   '13:00 - 14:00', '14:00 - 15:00', '15:00 - 16:00', '16:00 - 17:00'
 ];
 
 export default function StudentTimetable() {
-  const { user } = useAuth();
+  const { user,semester } = useAuth();
   // We need to fetch timetable for the student's department and semester.
   // Using hardcoded 1 for demo purposes if not available in user object
   const { data: timetable, isLoading } = useListTimetable({
     departmentId: user?.departmentId || 1,
-    semester: 1 // Ideally read from student profile
+    semester: semester || 1, // Ideally read from student profile
   });
 
   const getEntry = (day: string, slotStr: string) => {
     if (!timetable) return null;
-    const start = slotStr.split(' - ')[0] + ':00';
-    return timetable.find(t => t.dayOfWeek === day && t.startTime.startsWith(start));
+
+    const start = slotStr.split(" - ")[0].trim();
+
+    return timetable.find((t) => {
+      const dbTime = t.startTime.substring(0, 5);
+
+      return (
+        t.dayOfWeek.trim().toLowerCase() === day.trim().toLowerCase() &&
+        dbTime === start
+      );
+    });
   };
 
   if (isLoading) return <LoadingSkeleton type="table" />;
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold tracking-tight">Class Timetable</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold tracking-tight">
+          Class Timetable
+        </h1>
+
+        <Button
+          onClick={() =>
+            window.open(
+              `http://localhost:3000/api/timetable/export?departmentId=${user?.departmentId}&semester=3`,
+              "_blank",
+            )
+          }
+        >
+          Download Timetable
+        </Button>
+      </div>
 
       <div className="overflow-x-auto border border-border rounded-lg bg-card">
         <table className="w-full text-sm text-left">

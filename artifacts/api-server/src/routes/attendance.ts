@@ -1,3 +1,4 @@
+import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { Router, type IRouter } from "express";
 import { eq, and } from "drizzle-orm";
 import {
@@ -6,6 +7,9 @@ import {
   studentsTable,
   subjectsTable,
   usersTable,
+  facultyTable,
+  timetableTable,
+  departmentsTable,
 } from "@workspace/db";
 
 const router: IRouter = Router();
@@ -58,14 +62,63 @@ router.get("/attendance", async (req, res): Promise<void> => {
       const [student] = await db.select().from(studentsTable).where(eq(studentsTable.id, r.studentId));
       const [subject] = await db.select().from(subjectsTable).where(eq(subjectsTable.id, r.subjectId));
       let studentName: string | null = null;
+      let subjectCode: string | null = null;
+      let facultyName: string | null = null;
+      let startTime: string | null = null;
+      let endTime: string | null = null;
+
+      if (subject) {
+
+        subjectCode = subject.code;
+
+        if (subject.facultyId) {
+
+          const [faculty] = await db
+            .select()
+            .from(facultyTable)
+            .where(eq(facultyTable.id, subject.facultyId));
+
+          if (faculty) {
+
+            const [facultyUser] = await db
+              .select()
+              .from(usersTable)
+              .where(eq(usersTable.id, faculty.userId));
+
+            facultyName = facultyUser?.name ?? null;
+          }
+        }
+
+        const [slot] = await db
+          .select()
+          .from(timetableTable)
+          .where(eq(timetableTable.subjectId, subject.id));
+
+        if (slot) {
+          startTime = slot.startTime;
+          endTime = slot.endTime;
+        }
+      }
       if (student) {
         const [user] = await db.select().from(usersTable).where(eq(usersTable.id, student.userId));
         studentName = user?.name ?? null;
       }
       return {
+
         ...r,
+
         studentName,
+
         subjectName: subject?.name ?? null,
+
+        subjectCode,
+
+        facultyName,
+
+        startTime,
+
+        endTime,
+
       };
     })
   );
@@ -198,6 +251,82 @@ router.post("/attendance", async (req, res): Promise<void> => {
   res.status(201).json({ ...record, studentName: null, subjectName: null });
 });
 
+router.get("/attendance/student-history", async (req, res): Promise<void> => {
+  const { studentId } = req.query as Record<string, string>;
+
+  if (!studentId) {
+    res.status(400).json({
+      error: "studentId required",
+    });
+    return;
+  }
+
+  const records = await db
+    .select()
+    .from(attendanceTable)
+    .where(eq(attendanceTable.studentId, Number(studentId)));
+
+  const history = await Promise.all(
+    records.map(async (record) => {
+
+      const [subject] = await db
+        .select()
+        .from(subjectsTable)
+        .where(eq(subjectsTable.id, record.subjectId));
+
+      let facultyName: string | null = null;
+
+      if (subject?.facultyId) {
+
+        const [faculty] = await db
+          .select()
+          .from(facultyTable)
+          .where(eq(facultyTable.id, subject.facultyId));
+
+        if (faculty) {
+
+          const [user] = await db
+            .select()
+            .from(usersTable)
+            .where(eq(usersTable.id, faculty.userId));
+
+          facultyName = user?.name ?? null;
+        }
+      }
+
+      const [timetable] = await db
+        .select()
+        .from(timetableTable)
+        .where(eq(timetableTable.subjectId, record.subjectId));
+
+      return {
+        id: record.id,
+
+        date: record.date,
+
+        subjectId: record.subjectId,
+
+        subjectName: subject?.name ?? "",
+
+        subjectCode: subject?.code ?? "",
+
+        facultyName,
+
+        startTime: timetable?.startTime ?? null,
+
+        endTime: timetable?.endTime ?? null,
+
+        room: timetable?.room ?? null,
+
+        status: record.status,
+      };
+    })
+  );
+  history.sort((a, b) => b.date.localeCompare(a.date));
+
+  res.json(history);
+});
+
 router.get("/attendance/summary", async (req, res): Promise<void> => {
   const { studentId, subjectId } = req.query as Record<string, string>;
 
@@ -245,5 +374,504 @@ router.get("/attendance/summary", async (req, res): Promise<void> => {
 
   res.json(summaries);
 });
+
+router.get("/attendance/export-pdf", async (req, res): Promise<void> => {
+  try {
+    const { studentId } = req.query as Record<string, string>;
+
+    if (!studentId) {
+      res.status(400).json({
+        error: "studentId required",
+      });
+      return;
+    }
+
+    const sid = Number(studentId);
+
+    // Student
+    const [student] = await db
+      .select()
+      .from(studentsTable)
+      .where(eq(studentsTable.id, sid));
+
+    if (!student) {
+      res.status(404).json({
+        error: "Student not found",
+      });
+      return;
+    }
+
+    // User
+    const [user] = await db
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.id, student.userId));
+
+    // Department
+    const [department] = await db
+      .select()
+      .from(departmentsTable)
+      .where(eq(departmentsTable.id, student.departmentId));
+
+    // Attendance
+    const attendance = await db
+      .select()
+      .from(attendanceTable)
+      .where(eq(attendanceTable.studentId, sid));
+
+    // ==========================
+    // Subject Cache
+    // ==========================
+
+    const subjects = await db
+      .select()
+      .from(subjectsTable);
+
+    const subjectMap = new Map<number, string>();
+
+    subjects.forEach((subject) => {
+      subjectMap.set(subject.id, subject.name);
+    });
+
+    // PDF create
+    const pdf = await PDFDocument.create();
+
+    let page = pdf.addPage([595, 842]);
+
+    const font = await pdf.embedFont(StandardFonts.Helvetica);
+
+    // Next step yahan se start hoga...
+
+    const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
+
+    const pageWidth = page.getWidth();
+
+    let y = 800;
+
+    // =========================
+    // College Header
+    // =========================
+
+    page.drawText("COLLEGE LMS PLATFORM", {
+      x: 50,
+      y,
+      size: 22,
+      font: bold,
+      color: rgb(0.10, 0.25, 0.70),
+    });
+
+    y -= 28;
+
+    page.drawText("Student Attendance Report", {
+      x: 50,
+      y,
+      size: 14,
+      font,
+    });
+
+    y -= 15;
+
+    page.drawLine({
+      start: { x: 50, y },
+      end: { x: pageWidth - 50, y },
+      thickness: 1.2,
+      color: rgb(0.75, 0.75, 0.75),
+    });
+
+    y -= 35;
+
+    // =========================
+    // Student Details
+    // =========================
+
+    page.drawText("Student Details", {
+      x: 50,
+      y,
+      size: 16,
+      font: bold,
+    });
+
+    y -= 30;
+
+    page.drawText(`Name : ${user?.name ?? "-"}`, {
+      x: 50,
+      y,
+      size: 11,
+      font,
+    });
+
+    page.drawText(`Roll No : ${student.rollNumber}`, {
+      x: 320,
+      y,
+      size: 11,
+      font,
+    });
+
+    y -= 22;
+
+    page.drawText(`Department : ${department?.name ?? "-"}`, {
+      x: 50,
+      y,
+      size: 11,
+      font,
+    });
+
+    page.drawText(`Semester : ${student.semester}`, {
+      x: 320,
+      y,
+      size: 11,
+      font,
+    });
+
+    y -= 40;
+
+    const totalClasses = attendance.length;
+
+    const presentClasses = attendance.filter(
+      (a) => a.status === "present"
+    ).length;
+
+    const percentage =
+      totalClasses > 0
+        ? Math.round((presentClasses / totalClasses) * 100)
+        : 0;
+
+    page.drawText("Attendance Summary", {
+      x: 50,
+      y,
+      size: 16,
+      font: bold,
+    });
+
+    y -= 30;
+
+    page.drawText(
+      `Total Classes : ${totalClasses}`,
+      {
+        x: 50,
+        y,
+        size: 11,
+        font,
+      }
+    );
+
+    page.drawText(
+      `Present : ${presentClasses}`,
+      {
+        x: 240,
+        y,
+        size: 11,
+        font,
+      }
+    );
+
+    page.drawText(
+      `Attendance : ${percentage}%`,
+      {
+        x: 390,
+        y,
+        size: 11,
+        font: bold,
+        color:
+          percentage >= 75
+            ? rgb(0, 0.6, 0)
+            : rgb(0.8, 0, 0),
+      }
+    );
+
+    y -= 35;
+
+    page.drawLine({
+      start: { x: 50, y },
+      end: { x: pageWidth - 50, y },
+      thickness: 1,
+      color: rgb(0.8, 0.8, 0.8),
+    });
+
+    y -= 25;
+
+    // =========================
+    // Subject Wise Summary
+    // =========================
+
+    const subjectSummary = new Map<
+      number,
+      {
+        subjectName: string;
+        total: number;
+        present: number;
+      }
+    >();
+
+    for (const item of attendance) {
+      if (!subjectSummary.has(item.subjectId)) {
+        subjectSummary.set(item.subjectId, {
+          subjectName:
+            subjectMap.get(item.subjectId) ?? "-",
+          total: 0,
+          present: 0,
+        });
+      }
+
+      const s = subjectSummary.get(item.subjectId)!;
+
+      s.total++;
+
+      if (item.status === "present") {
+        s.present++;
+      }
+    }
+
+    page.drawText("Subject-wise Attendance", {
+      x: 50,
+      y,
+      size: 16,
+      font: bold,
+    });
+
+    y -= 28;
+
+    page.drawRectangle({
+      x: 50,
+      y: y - 5,
+      width: 495,
+      height: 22,
+      color: rgb(0.92, 0.94, 1),
+    });
+
+    page.drawText("Subject", {
+      x: 60,
+      y,
+      size: 10,
+      font: bold,
+    });
+
+    page.drawText("Present", {
+      x: 300,
+      y,
+      size: 10,
+      font: bold,
+    });
+
+    page.drawText("Total", {
+      x: 380,
+      y,
+      size: 10,
+      font: bold,
+    });
+
+    page.drawText("%", {
+      x: 470,
+      y,
+      size: 10,
+      font: bold,
+    });
+
+    y -= 28;
+
+    for (const subject of subjectSummary.values()) {
+
+      const percent =
+        Math.round((subject.present / subject.total) * 100);
+
+      page.drawText(subject.subjectName, {
+        x: 60,
+        y,
+        size: 10,
+        font,
+      });
+
+      page.drawText(subject.present.toString(), {
+        x: 315,
+        y,
+        size: 10,
+        font,
+      });
+
+      page.drawText(subject.total.toString(), {
+        x: 390,
+        y,
+        size: 10,
+        font,
+      });
+
+      page.drawText(`${percent}%`, {
+        x: 470,
+        y,
+        size: 10,
+        font: bold,
+        color:
+          percent >= 75
+            ? rgb(0, 0.6, 0)
+            : rgb(0.8, 0, 0),
+      });
+
+      y -= 20;
+    }
+
+    y -= 25;
+
+    // =========================
+    // Attendance History
+    // =========================
+
+    page.drawText("Attendance History", {
+      x: 50,
+      y,
+      size: 16,
+      font: bold,
+    });
+
+    y -= 28;
+
+    // Table Header
+    const drawHistoryHeader = () => {
+      page.drawRectangle({
+        x: 50,
+        y: y - 5,
+        width: 495,
+        height: 22,
+        color: rgb(0.92, 0.94, 1),
+      });
+
+      page.drawText("Date", {
+        x: 60,
+        y,
+        size: 10,
+        font: bold,
+      });
+
+      page.drawText("Subject", {
+        x: 180,
+        y,
+        size: 10,
+        font: bold,
+      });
+
+      page.drawText("Status", {
+        x: 470,
+        y,
+        size: 10,
+        font: bold,
+      });
+
+      y -= 28;
+    };
+
+    drawHistoryHeader();
+
+    for (const item of attendance) {
+
+      // New Page if required
+      if (y < 70) {
+
+        const newPage = pdf.addPage([595, 842]);
+
+        y = 800;
+
+        page = newPage;
+
+        drawHistoryHeader();
+      }
+
+      const subjectName =
+        subjectMap.get(item.subjectId) ?? "-";
+
+      page.drawText(item.date, {
+        x: 60,
+        y,
+        size: 10,
+        font,
+      });
+
+      page.drawText(subjectName, {
+        x: 180,
+        y,
+        size: 10,
+        font,
+      });
+
+      let color = rgb(0, 0.6, 0);
+
+      if (item.status === "absent") {
+        color = rgb(0.85, 0, 0);
+      }
+
+      if (item.status === "late") {
+        color = rgb(0.9, 0.6, 0);
+      }
+
+      page.drawText(item.status.toUpperCase(), {
+        x: 470,
+        y,
+        size: 10,
+        font: bold,
+        color,
+      });
+
+      y -= 18;
+    }
+
+    // ==========================
+// Footer
+// ==========================
+
+const pages = pdf.getPages();
+
+pages.forEach((p, index) => {
+
+  const footerFont = bold;
+
+  p.drawLine({
+    start: { x: 50, y: 40 },
+    end: { x: 545, y: 40 },
+    thickness: 0.8,
+    color: rgb(0.8, 0.8, 0.8),
+  });
+
+  p.drawText(
+    `Generated on : ${new Date().toLocaleString()}`,
+    {
+      x: 50,
+      y: 22,
+      size: 9,
+      font: footerFont,
+      color: rgb(0.4, 0.4, 0.4),
+    }
+  );
+
+  p.drawText(
+    `Page ${index + 1} of ${pages.length}`,
+    {
+      x: 470,
+      y: 22,
+      size: 9,
+      font: footerFont,
+      color: rgb(0.4, 0.4, 0.4),
+    }
+  );
+
+});
+
+    const pdfBytes = await pdf.save();
+
+    res.setHeader("Content-Type", "application/pdf");
+
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=Attendance_Report_${student.rollNumber}.pdf`
+    );
+
+    res.send(Buffer.from(pdfBytes));
+
+  } catch (err) {
+    console.error(err);
+
+    res.status(500).json({
+      error: "Failed to generate PDF",
+    });
+  }
+});
+
 
 export default router;

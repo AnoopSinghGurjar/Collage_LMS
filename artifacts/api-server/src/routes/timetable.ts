@@ -104,9 +104,23 @@ router.post(
   upload.single("file"),
   async (req, res): Promise<void> => {
     try {
+
       if (!req.file) {
         res.status(400).json({
           error: "Please upload an Excel file",
+        });
+        return;
+      }
+
+      // ✅ Allow only Excel files
+      const allowedMimeTypes = [
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.ms-excel",
+      ];
+
+      if (!allowedMimeTypes.includes(req.file.mimetype)) {
+        res.status(400).json({
+          error: "Only .xlsx and .xls files are allowed",
         });
         return;
       }
@@ -119,17 +133,36 @@ router.post(
 
       const sheet = workbook.Sheets[sheetName];
 
-      // const rows = XLSX.utils.sheet_to_json(sheet);
-
-      // console.log(rows);
-
-      // res.json({
-      //   success: true,
-      //   totalRows: rows.length,
-      //   preview: rows.slice(0, 5),
-      // });
-
       const rows = XLSX.utils.sheet_to_json<any>(sheet);
+
+      const requiredColumns = [
+        "Department",
+        "Semester",
+        "Subject",
+        "Faculty",
+        "Day",
+        "Start Time",
+        "End Time",
+        "Room",
+      ];
+
+      if (rows.length === 0) {
+        res.status(400).json({
+          error: "Excel file is empty",
+        });
+        return;
+      }
+
+      const missingColumns = requiredColumns.filter(
+        (column) => !(column in rows[0])
+      );
+
+      if (missingColumns.length > 0) {
+        res.status(400).json({
+          error: `Missing columns: ${missingColumns.join(", ")}`,
+        });
+        return;
+      }
 
       let inserted = 0;
       const errors: any[] = [];
@@ -252,22 +285,27 @@ router.get("/timetable/template", async (_req, res) => {
 });
 
 router.get("/timetable/export", async (req, res): Promise<void> => {
+  const {
+    departmentId,
+    semester,
+    facultyId,
+  } = req.query as Record<string, string>;
   try {
     const all = await db.select().from(timetableTable);
 
-const timetable = all
-  .filter(
-    (t) =>
-      !departmentId || t.departmentId === Number(departmentId),
-  )
-  .filter(
-    (t) =>
-      !semester || t.semester === Number(semester),
-  )
-  .filter(
-    (t) =>
-      !facultyId || t.facultyId === Number(facultyId),
-  );
+    const timetable = all
+      .filter(
+        (t) =>
+          !departmentId || t.departmentId === Number(departmentId),
+      )
+      .filter(
+        (t) =>
+          !semester || t.semester === Number(semester),
+      )
+      .filter(
+        (t) =>
+          !facultyId || t.facultyId === Number(facultyId),
+      );
 
     const rows = [];
 

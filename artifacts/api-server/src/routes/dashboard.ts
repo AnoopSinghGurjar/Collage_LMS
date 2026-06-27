@@ -80,6 +80,15 @@ router.get("/dashboard/student", async (req, res): Promise<void> => {
   const attendance = await db.select().from(attendanceTable).where(eq(attendanceTable.studentId, sid));
   const presentCount = attendance.filter((a) => a.status === "present").length;
   const attendanceOverall = attendance.length > 0 ? Math.round((presentCount / attendance.length) * 100) : 0;
+  const totalClasses = attendance.length;
+
+  let classesNeeded = 0;
+
+  if (attendanceOverall < 75) {
+    classesNeeded = Math.ceil(
+      (0.75 * totalClasses - presentCount) / 0.25
+    );
+  }
 
   // Subject attendance summary
   const subjectMap = new Map<number, { total: number; attended: number }>();
@@ -142,6 +151,13 @@ router.get("/dashboard/student", async (req, res): Promise<void> => {
       enrolledAt: student.enrolledAt.toISOString(),
     },
     attendanceOverall,
+    attendanceRequirement: {
+      current: attendanceOverall,
+      required: 75,
+      totalClasses,
+      presentClasses: presentCount,
+      classesNeeded,
+    },
     subjectAttendance,
     upcomingAssignments,
     recentResults,

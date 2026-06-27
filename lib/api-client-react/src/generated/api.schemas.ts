@@ -544,6 +544,13 @@ export interface AdminDashboard {
 export interface StudentDashboard {
   student: Student;
   attendanceOverall: number;
+  attendanceRequirement: {
+  current: number;
+  required: number;
+  totalClasses: number;
+  presentClasses: number;
+  classesNeeded: number;
+};
   subjectAttendance?: AttendanceSummary[];
   upcomingAssignments: Assignment[];
   recentResults: Result[];

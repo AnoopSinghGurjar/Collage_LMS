@@ -17,10 +17,9 @@ export default function StudentAttendance() {
   const { studentId } = useAuth();
   const [history, setHistory] = useState<any[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
-  const { data, isLoading } = useGetStudentDashboard(
-    { studentId: studentId! },
-    { query: { enabled: !!studentId } }
-  );
+  const { data, isLoading } = useGetStudentDashboard({
+    studentId: studentId!,
+  });
 
   const attendanceMap = new Map<string, string>();
 

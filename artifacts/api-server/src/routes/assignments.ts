@@ -1,3 +1,5 @@
+import path from "path";
+import { uploadAssignment } from "../middlewares/upload";
 import { Router, type IRouter } from "express";
 import { eq, and, sql } from "drizzle-orm";
 import { db, assignmentsTable, submissionsTable, subjectsTable, facultyTable, usersTable, studentsTable } from "@workspace/db";
@@ -40,20 +42,152 @@ router.get("/assignments", async (req, res): Promise<void> => {
   res.json(enriched);
 });
 
-router.post("/assignments", async (req, res): Promise<void> => {
-  const { title, description, subjectId, facultyId, dueDate, maxMarks, semester } = req.body;
-  if (!title || !subjectId || !facultyId || !dueDate) {
-    res.status(400).json({ error: "Missing required fields" });
-    return;
+// router.post("/assignments", async (req, res): Promise<void> => {
+//   const { title, description, subjectId, facultyId, dueDate, maxMarks, semester } = req.body;
+//   if (!title || !subjectId || !facultyId || !dueDate) {
+//     res.status(400).json({ error: "Missing required fields" });
+//     return;
+//   }
+
+//   const [assignment] = await db
+//     .insert(assignmentsTable)
+//     .values({ title, description: description ?? null, subjectId, facultyId, dueDate, maxMarks: maxMarks ?? 100, semester: semester ?? null })
+//     .returning();
+
+//   res.status(201).json({ ...assignment, createdAt: assignment.createdAt.toISOString(), subjectName: null, facultyName: null, submissionCount: 0 });
+// });
+
+router.get(
+  "/student/assignments",
+  async (req, res): Promise<void> => {
+    try {
+      const { studentId } = req.query as Record<
+        string,
+        string
+      >;
+
+      if (!studentId) {
+        res.status(400).json({
+          error: "studentId required",
+        });
+        return;
+      }
+
+      const sid = Number(studentId);
+
+      const [student] = await db
+        .select()
+        .from(studentsTable)
+        .where(eq(studentsTable.id, sid));
+
+      if (!student) {
+        res.status(404).json({
+          error: "Student not found",
+        });
+        return;
+      }
+
+      const assignments = await db
+        .select()
+        .from(assignmentsTable)
+        .where(
+          eq(
+            assignmentsTable.semester,
+            student.semester
+          )
+        );
+
+      const result = await Promise.all(
+        assignments.map(async (assignment) => {
+
+          const [subject] = await db
+            .select()
+            .from(subjectsTable)
+            .where(
+              eq(
+                subjectsTable.id,
+                assignment.subjectId
+              )
+            );
+
+          const [faculty] = await db
+            .select()
+            .from(facultyTable)
+            .where(
+              eq(
+                facultyTable.id,
+                assignment.facultyId
+              )
+            );
+
+          let facultyName = "";
+
+          if (faculty) {
+            const [user] = await db
+              .select()
+              .from(usersTable)
+              .where(
+                eq(
+                  usersTable.id,
+                  faculty.userId
+                )
+              );
+
+            facultyName = user?.name ?? "";
+          }
+
+          const [submission] = await db
+            .select()
+            .from(submissionsTable)
+            .where(
+              and(
+                eq(
+                  submissionsTable.assignmentId,
+                  assignment.id
+                ),
+                eq(
+                  submissionsTable.studentId,
+                  sid
+                )
+              )
+            );
+
+          return {
+            ...assignment,
+
+            subjectName:
+              subject?.name ?? "",
+
+            facultyName,
+
+            submitted:
+              !!submission,
+
+            marks:
+              submission?.marks ?? null,
+
+            feedback:
+              submission?.feedback ?? null,
+
+            status:
+              submission?.status ??
+              "pending",
+          };
+        })
+      );
+
+      res.json(result);
+
+    } catch (err) {
+      console.error("========== STUDENT ASSIGNMENT ERROR ==========");
+      console.error(err);
+
+      res.status(500).json({
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
   }
-
-  const [assignment] = await db
-    .insert(assignmentsTable)
-    .values({ title, description: description ?? null, subjectId, facultyId, dueDate, maxMarks: maxMarks ?? 100, semester: semester ?? null })
-    .returning();
-
-  res.status(201).json({ ...assignment, createdAt: assignment.createdAt.toISOString(), subjectName: null, facultyName: null, submissionCount: 0 });
-});
+);
 
 router.get("/assignments/:id", async (req, res): Promise<void> => {
   const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
@@ -144,5 +278,71 @@ router.patch("/submissions/:id/grade", async (req, res): Promise<void> => {
   }
   res.json({ ...sub, submittedAt: sub.submittedAt.toISOString(), studentName: null });
 });
+
+router.post(
+  "/assignments",
+  uploadAssignment.single("file"),
+  async (req, res): Promise<void> => {
+    try {
+      const {
+        title,
+        description,
+        subjectId,
+        facultyId,
+        semester,
+        dueDate,
+        maxMarks,
+      } = req.body;
+
+      if (
+        !title ||
+        !subjectId ||
+        !facultyId ||
+        !dueDate
+      ) {
+        res.status(400).json({
+          error: "Missing required fields",
+        });
+        return;
+      }
+
+      const assignment = await db
+        .insert(assignmentsTable)
+        .values({
+          title,
+          description,
+          subjectId: Number(subjectId),
+          facultyId: Number(facultyId),
+          semester: semester
+            ? Number(semester)
+            : null,
+          dueDate,
+          maxMarks: maxMarks
+            ? Number(maxMarks)
+            : 100,
+
+          attachmentUrl: req.file
+            ? `/uploads/assignments/faculty/${req.file.filename}`
+            : null,
+
+          attachmentName: req.file?.originalname ?? null,
+
+          attachmentType: req.file?.mimetype ?? null,
+        })
+        .returning();
+
+      res.status(201).json(assignment[0]);
+
+    } catch (err) {
+      console.error("========== ASSIGNMENT ERROR ==========");
+      console.error(err);
+
+      res.status(500).json({
+        error: err instanceof Error ? err.message : String(err),
+      });
+
+    }
+  }
+);
 
 export default router;

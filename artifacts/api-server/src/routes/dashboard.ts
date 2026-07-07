@@ -17,6 +17,8 @@ import {
   usersTable,
 } from "@workspace/db";
 
+import { submissionsTable } from "@workspace/db";
+
 const router: IRouter = Router();
 
 router.get("/dashboard/admin", async (_req, res): Promise<void> => {
@@ -195,13 +197,33 @@ router.get("/dashboard/faculty", async (req, res): Promise<void> => {
     .filter((t) => t.dayOfWeek === today && t.facultyId === fid)
     .map((t) => ({ ...t, subjectName: null, facultyName: null }));
 
-  const recentAssignments = assignments.slice(0, 5).map((a) => ({
-    ...a,
-    createdAt: a.createdAt.toISOString(),
-    subjectName: null,
-    facultyName: null,
-    submissionCount: 0,
-  }));
+  const recentAssignments = await Promise.all(
+
+    assignments.slice(0, 5).map(async (a) => {
+
+      const [subject] = await db
+        .select()
+        .from(subjectsTable)
+        .where(eq(subjectsTable.id, a.subjectId));
+
+      const [countResult] = await db
+        .select({
+          count: sql<number>`count(*)`,
+        })
+        .from(submissionsTable)
+        .where(eq(submissionsTable.assignmentId, a.id));
+
+      return {
+        ...a,
+        createdAt: a.createdAt.toISOString(),
+        subjectName: subject?.name ?? null,
+        facultyName: user?.name ?? null,
+        submissionCount: Number(countResult?.count ?? 0),
+      };
+
+    })
+
+  );
 
   const recentNotices = (await db.select().from(noticesTable).orderBy(desc(noticesTable.createdAt)).limit(5))
     .map((n) => ({ ...n, createdAt: n.createdAt.toISOString(), createdByName: null, departmentName: null }));

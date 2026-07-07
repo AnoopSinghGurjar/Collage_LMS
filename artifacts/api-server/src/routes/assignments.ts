@@ -244,22 +244,83 @@ router.get("/assignments/:id/submissions", async (req, res): Promise<void> => {
   res.json(enriched);
 });
 
-router.post("/assignments/:id/submissions", async (req, res): Promise<void> => {
-  const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-  const assignmentId = parseInt(raw, 10);
-  const { studentId, fileUrl, notes } = req.body;
-  if (!studentId) {
-    res.status(400).json({ error: "studentId required" });
-    return;
+// router.post("/assignments/:id/submissions", async (req, res): Promise<void> => {
+//   const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+//   const assignmentId = parseInt(raw, 10);
+//   const { studentId, fileUrl, notes } = req.body;
+//   if (!studentId) {
+//     res.status(400).json({ error: "studentId required" });
+//     return;
+//   }
+
+//   const [sub] = await db
+//     .insert(submissionsTable)
+//     .values({ assignmentId, studentId, fileUrl: fileUrl ?? null, notes: notes ?? null, status: "submitted" })
+//     .returning();
+
+//   res.status(201).json({ ...sub, submittedAt: sub.submittedAt.toISOString(), studentName: null });
+// });
+
+router.post(
+  "/assignments/:id/submissions",
+  uploadAssignment.single("file"),
+  async (req, res): Promise<void> => {
+    try {
+      const assignmentId = Number(req.params.id);
+
+      const { studentId, notes } = req.body;
+
+      if (!studentId) {
+        res.status(400).json({
+          error: "studentId required",
+        });
+        return;
+      }
+
+      const [submission] = await db
+        .insert(submissionsTable)
+        .values({
+          assignmentId,
+
+          studentId: Number(studentId),
+
+          notes: notes ?? null,
+
+          fileUrl: req.file
+            ? `/uploads/assignments/students/${req.file.filename}`
+            : null,
+
+          fileName: req.file?.originalname ?? null,
+
+          fileType: req.file?.mimetype ?? null,
+
+          status: "submitted",
+        })
+        .returning();
+
+      res.status(201).json({
+        ...submission,
+        submittedAt: submission.submittedAt.toISOString(),
+      });
+
+    } catch (err) {
+
+      console.error(
+        "========== STUDENT SUBMISSION ERROR =========="
+      );
+
+      console.error(err);
+
+      res.status(500).json({
+        error:
+          err instanceof Error
+            ? err.message
+            : String(err),
+      });
+
+    }
   }
-
-  const [sub] = await db
-    .insert(submissionsTable)
-    .values({ assignmentId, studentId, fileUrl: fileUrl ?? null, notes: notes ?? null, status: "submitted" })
-    .returning();
-
-  res.status(201).json({ ...sub, submittedAt: sub.submittedAt.toISOString(), studentName: null });
-});
+);
 
 router.patch("/submissions/:id/grade", async (req, res): Promise<void> => {
   const raw = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;

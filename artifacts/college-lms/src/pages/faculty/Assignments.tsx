@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import React, { useState } from "react";
+import { useLocation } from "wouter";
 import {
     Search,
     Plus,
@@ -131,6 +132,8 @@ export default function FacultyAssignments() {
 
     const [selectedAssignment, setSelectedAssignment] =
         useState<Assignment | null>(null);
+
+    const [, navigate] = useLocation();
 
     const fetchAssignments = async () => {
         try {
@@ -1117,7 +1120,7 @@ export default function FacultyAssignments() {
 
                             </div>
 
-                            <div className="grid grid-cols-4 gap-2">
+                            <div className="grid grid-cols-5 gap-2">
 
                                 <Button
                                     variant="outline"
@@ -1131,8 +1134,6 @@ export default function FacultyAssignments() {
                                     variant="outline"
                                     size="sm"
                                     onClick={() => {
-                                        console.log("Attachment URL:", assignment.attachmentUrl);
-
                                         window.open(
                                             `http://localhost:3000${assignment.attachmentUrl}`,
                                             "_blank"
@@ -1140,6 +1141,18 @@ export default function FacultyAssignments() {
                                     }}
                                 >
                                     Download
+                                </Button>
+
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() =>
+                                        navigate(
+                                            `/faculty/submissions?assignmentId=${assignment.id}`
+                                        )
+                                    }
+                                >
+                                    Submissions
                                 </Button>
 
                                 <Button

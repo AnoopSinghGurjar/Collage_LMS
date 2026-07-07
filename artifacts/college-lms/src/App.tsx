@@ -32,6 +32,7 @@ import StudentNotices from "@/pages/student/Notices";
 import StudentLeaves from "@/pages/student/Leaves";
 
 // Faculty
+import FacultySubmissions from "@/pages/faculty/FacultySubmissions";
 import FacultyMySubjects from "@/pages/faculty/MySubjects";
 import FacultyDashboard from "@/pages/faculty/Dashboard";
 import FacultyAttendance from "@/pages/faculty/Attendance";
@@ -55,7 +56,7 @@ function App() {
             <Switch>
               <Route path="/" component={Landing} />
               <Route path="/login" component={Login} />
-              
+
               {/* Admin Routes */}
               <Route path="/admin">
                 <ProtectedRoute allowedRoles={["admin", "hod"]}>
@@ -158,12 +159,12 @@ function App() {
               </Route>
 
               <Route path="/faculty/my-subjects">
-  <ProtectedRoute allowedRoles={["faculty"]}>
-    <Layout>
-      <FacultyMySubjects />
-    </Layout>
-  </ProtectedRoute>
-</Route>
+                <ProtectedRoute allowedRoles={["faculty"]}>
+                  <Layout>
+                    <FacultyMySubjects />
+                  </Layout>
+                </ProtectedRoute>
+              </Route>
 
 
               <Route path="/faculty/attendance">
@@ -174,6 +175,14 @@ function App() {
               <Route path="/faculty/assignments">
                 <ProtectedRoute allowedRoles={["faculty"]}>
                   <Layout><FacultyAssignments /></Layout>
+                </ProtectedRoute>
+              </Route>
+
+              <Route path="/faculty/submissions">
+                <ProtectedRoute allowedRoles={["faculty"]}>
+                  <Layout>
+                    <FacultySubmissions />
+                  </Layout>
                 </ProtectedRoute>
               </Route>
               <Route path="/faculty/quizzes">

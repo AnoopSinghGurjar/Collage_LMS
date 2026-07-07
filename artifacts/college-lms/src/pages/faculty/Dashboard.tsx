@@ -8,17 +8,16 @@ import { Users, FileText, Clock } from 'lucide-react';
 
 export default function FacultyDashboard() {
   const { facultyId } = useAuth();
-  const { data, isLoading } = useGetFacultyDashboard(
-    { facultyId: facultyId! }, 
-    { query: { enabled: !!facultyId } }
-  );
+  const { data, isLoading } = useGetFacultyDashboard({
+    facultyId: facultyId!,
+  });
 
   if (isLoading || !data) return <LoadingSkeleton type="dashboard" />;
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold tracking-tight">Faculty Dashboard</h1>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatCard title="Total Students" value={data.totalStudents} icon={<Users />} />
         <StatCard title="Today's Classes" value={data.todayClasses?.length || 0} icon={<Clock />} />
@@ -36,7 +35,7 @@ export default function FacultyDashboard() {
                 {data.todayClasses.map((cls, i) => (
                   <div key={i} className="flex items-center gap-4 p-3 rounded-lg border border-border bg-muted/20">
                     <div className="flex flex-col items-center justify-center w-16 h-16 rounded bg-primary/10 text-primary font-semibold text-sm">
-                      <span>{cls.startTime.substring(0,5)}</span>
+                      <span>{cls.startTime.substring(0, 5)}</span>
                     </div>
                     <div>
                       <p className="font-medium">{cls.subjectName}</p>
@@ -58,7 +57,7 @@ export default function FacultyDashboard() {
           <CardContent>
             {data.recentAssignments && data.recentAssignments.length > 0 ? (
               <div className="space-y-3">
-                {data.recentAssignments.slice(0,4).map(ass => (
+                {data.recentAssignments.slice(0, 4).map(ass => (
                   <div key={ass.id} className="p-3 border border-border rounded-lg bg-muted/10 flex justify-between items-center">
                     <div>
                       <p className="font-medium text-sm">{ass.title}</p>

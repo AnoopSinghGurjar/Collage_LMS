@@ -81,4 +81,91 @@ router.post("/results", async (req, res): Promise<void> => {
   });
 });
 
+router.patch("/results/:id", async (req, res): Promise<void> => {
+
+  const id = Number(req.params.id);
+
+  const {
+    internalMarks,
+    externalMarks,
+    remarks,
+    published,
+  } = req.body;
+
+  const total =
+    Number(internalMarks) +
+    Number(externalMarks);
+
+  const { grade, passed } =
+    calcGrade(total);
+
+  const [result] = await db
+    .update(resultsTable)
+    .set({
+
+      internalMarks:
+        String(internalMarks),
+
+      externalMarks:
+        String(externalMarks),
+
+      totalMarks:
+        String(total),
+
+      grade,
+
+      passed,
+
+      remarks,
+
+      published,
+
+    })
+    .where(eq(resultsTable.id, id))
+    .returning();
+
+  if (!result) {
+
+    res.status(404).json({
+      error: "Result not found",
+    });
+
+    return;
+
+  }
+
+  res.json({
+
+    ...result,
+
+    internalMarks: Number(
+      result.internalMarks
+    ),
+
+    externalMarks: Number(
+      result.externalMarks
+    ),
+
+    totalMarks: Number(
+      result.totalMarks
+    ),
+
+  });
+
+});
+
+router.delete("/results/:id", async (req, res): Promise<void> => {
+
+  const id = Number(req.params.id);
+
+  await db
+    .delete(resultsTable)
+    .where(eq(resultsTable.id, id));
+
+  res.json({
+    message: "Result deleted",
+  });
+
+});
+
 export default router;

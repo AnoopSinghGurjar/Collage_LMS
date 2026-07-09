@@ -12,6 +12,12 @@ export const resultsTable = pgTable("results", {
   totalMarks: numeric("total_marks", { precision: 5, scale: 2 }).notNull(),
   grade: text("grade").notNull(),
   passed: boolean("passed").notNull().default(true),
+
+  remarks: text("remarks"),
+
+published: boolean("published")
+  .notNull()
+  .default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

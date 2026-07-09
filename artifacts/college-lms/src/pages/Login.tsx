@@ -88,7 +88,7 @@ export default function Login() {
         <Card className="bg-card/50 backdrop-blur-xl border-card-border shadow-2xl">
           <CardHeader className="pb-4">
             <Tabs defaultValue="student" className="w-full" onValueChange={handleRoleChange}>
-              <TabsList className="grid w-full grid-cols-4 bg-background/50 border border-border">
+              <TabsList className="grid w-full grid-cols-3 bg-background/50 border border-border">
                 <TabsTrigger value="student" className="text-xs data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
                   <BookOpen className="w-3 h-3 mr-1.5 hidden sm:inline-block" /> Student
                 </TabsTrigger>
@@ -98,9 +98,9 @@ export default function Login() {
                 <TabsTrigger value="admin" className="text-xs data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
                   <ShieldAlert className="w-3 h-3 mr-1.5 hidden sm:inline-block" /> Admin
                 </TabsTrigger>
-                <TabsTrigger value="hod" className="text-xs data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
+                {/* <TabsTrigger value="hod" className="text-xs data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
                   <GraduationCap className="w-3 h-3 mr-1.5 hidden sm:inline-block" /> HOD
-                </TabsTrigger>
+                </TabsTrigger> */}
               </TabsList>
             </Tabs>
           </CardHeader>

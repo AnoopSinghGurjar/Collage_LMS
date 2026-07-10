@@ -87,6 +87,12 @@ export default function FacultyResults() {
 
     const [saving, setSaving] = useState(false);
 
+    const [students, setStudents] = useState<any[]>([]);
+
+    const [subjects, setSubjects] = useState<any[]>([]);
+
+    const [departmentId, setDepartmentId] = useState("");
+
     const fetchResults = async () => {
 
         try {
@@ -108,6 +114,30 @@ export default function FacultyResults() {
             setLoading(false);
 
         }
+
+    };
+
+    const fetchStudents = async () => {
+
+        const res = await fetch(
+            "http://localhost:3000/api/students"
+        );
+
+        const data = await res.json();
+
+        setStudents(data.students || []);
+
+    };
+
+    const fetchSubjects = async () => {
+
+        const res = await fetch(
+            "http://localhost:3000/api/subjects"
+        );
+
+        const data = await res.json();
+
+        setSubjects(data);
 
     };
 
@@ -185,6 +215,10 @@ export default function FacultyResults() {
     useEffect(() => {
 
         fetchResults();
+
+        fetchStudents();
+
+        fetchSubjects();
 
     }, []);
 
@@ -605,41 +639,85 @@ export default function FacultyResults() {
 
                         <div>
 
-                            <Label>
+                            <Label>Select Student</Label>
 
-                                Student ID
-
-                            </Label>
-
-                            <Input
+                            <select
+                                className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
                                 value={studentId}
-                                onChange={(e) =>
-                                    setStudentId(
-                                        e.target.value
-                                    )
-                                }
-                                placeholder="Enter Student ID"
-                            />
+                                onChange={(e) => {
+                                    const id = e.target.value;
+
+                                    setStudentId(id);
+
+                                    const student = students.find(
+                                        (s) => String(s.id) === id
+                                    );
+
+                                    if (student) {
+                                        setSemester(String(student.semester));
+                                        setDepartmentId(String(student.departmentId));
+                                    }
+                                }}
+                            >
+
+                                <option value="">
+                                    Select Student
+                                </option>
+
+                                {students.map((student) => (
+
+                                    <option
+                                        key={student.id}
+                                        value={student.id}
+                                    >
+                                        {student.name} ({student.rollNumber})
+                                    </option>
+
+                                ))}
+
+                            </select>
 
                         </div>
 
                         <div>
 
-                            <Label>
+                            <Label>Select Subject</Label>
 
-                                Subject ID
-
-                            </Label>
-
-                            <Input
+                            <select
+                                className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
                                 value={subjectId}
                                 onChange={(e) =>
-                                    setSubjectId(
-                                        e.target.value
-                                    )
+                                    setSubjectId(e.target.value)
                                 }
-                                placeholder="Enter Subject ID"
-                            />
+                            >
+
+                                <option value="">
+                                    Select Subject
+                                </option>
+
+                                {subjects
+                                    .filter((s) => {
+
+                                        if (!semester) return true;
+
+                                        return (
+                                            String(s.semester) === semester &&
+                                            String(s.departmentId) === departmentId
+                                        );
+
+                                    })
+                                    .map((subject) => (
+
+                                        <option
+                                            key={subject.id}
+                                            value={subject.id}
+                                        >
+                                            {subject.name}
+                                        </option>
+
+                                    ))}
+
+                            </select>
 
                         </div>
 
@@ -652,7 +730,7 @@ export default function FacultyResults() {
                             </Label>
 
                             <Input
-                                type="number"
+                                readOnly
                                 value={semester}
                                 onChange={(e) =>
                                     setSemester(

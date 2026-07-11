@@ -33,6 +33,14 @@ import { Badge } from "@/components/ui/badge";
 
 import { LoadingSkeleton } from "@/components/LoadingSkeleton";
 
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+
 interface Result {
 
     id: number;
@@ -61,6 +69,10 @@ interface Result {
 
     published?: boolean;
 
+    academicSession: string | null;
+
+    departmentId: number | null;
+
 }
 
 export default function FacultyResults() {
@@ -87,11 +99,21 @@ export default function FacultyResults() {
 
     const [saving, setSaving] = useState(false);
 
+    const [excelFile, setExcelFile] = useState<File | null>(null);
+
+    const [uploadingExcel, setUploadingExcel] = useState(false);
+
     const [students, setStudents] = useState<any[]>([]);
 
     const [subjects, setSubjects] = useState<any[]>([]);
 
     const [departmentId, setDepartmentId] = useState("");
+    const [filterSession, setFilterSession] = useState("2026-27");
+
+    const [filterSemester, setFilterSemester] = useState("");
+
+    const [filterSubject, setFilterSubject] = useState("");
+    const [academicSession, setAcademicSession] = useState("2026-27");
 
     const fetchResults = async () => {
 
@@ -103,7 +125,11 @@ export default function FacultyResults() {
 
             const data = await res.json();
 
-            setResults(data);
+            setResults(
+                data.sort(
+                    (a: any, b: any) => b.id - a.id
+                )
+            );
 
         } catch (err) {
 
@@ -164,6 +190,10 @@ export default function FacultyResults() {
 
                         semester: Number(semester),
 
+                        academicSession,
+
+                        departmentId: Number(departmentId),
+
                         internalMarks: Number(internalMarks),
 
                         externalMarks: Number(externalMarks),
@@ -212,6 +242,87 @@ export default function FacultyResults() {
 
     };
 
+    const uploadExcel = async () => {
+
+        if (
+            !academicSession ||
+            !departmentId ||
+            !semester ||
+            !subjectId
+        ) {
+
+            alert(
+                "Please select Academic Session, Department, Semester and Subject."
+            );
+
+            return;
+
+        }
+
+        if (!excelFile) {
+
+            alert("Please select an Excel file");
+
+            return;
+
+        }
+
+        try {
+
+            setUploadingExcel(true);
+
+            const formData = new FormData();
+
+            formData.append("academicSession", academicSession);
+
+            formData.append("departmentId", departmentId);
+
+            formData.append("semester", semester);
+
+            formData.append("subjectId", subjectId);
+
+            formData.append("file", excelFile);
+
+            const res = await fetch(
+                "http://localhost:3000/api/results/import",
+                {
+                    method: "POST",
+                    body: formData,
+                }
+            );
+
+            const data = await res.json();
+
+            if (!res.ok) {
+
+                throw new Error(data.error);
+
+            }
+
+            alert(
+                `Imported: ${data.imported}\nSkipped: ${data.skipped}`
+            );
+
+            await fetchResults();
+
+            setExcelFile(null);
+
+            setOpenDialog(false);
+
+        } catch (err) {
+
+            console.error(err);
+
+            alert("Excel upload failed");
+
+        } finally {
+
+            setUploadingExcel(false);
+
+        }
+
+    };
+
     useEffect(() => {
 
         fetchResults();
@@ -222,20 +333,43 @@ export default function FacultyResults() {
 
     }, []);
 
-    const filteredResults =
-        useMemo(() => {
+    const filteredResults = useMemo(() => {
 
-            return results.filter((r) =>
+        return results.filter((r) => {
 
+            const matchesSearch =
                 r.studentName
                     ?.toLowerCase()
-                    .includes(
-                        search.toLowerCase()
-                    )
+                    .includes(search.toLowerCase());
 
+            const matchesSession =
+                !filterSession ||
+                r.academicSession === filterSession;
+
+            const matchesSemester =
+                !filterSemester ||
+                String(r.semester) === filterSemester;
+
+            const matchesSubject =
+                !filterSubject ||
+                String(r.subjectId) === filterSubject;
+
+            return (
+                matchesSearch &&
+                matchesSession &&
+                matchesSemester &&
+                matchesSubject
             );
 
-        }, [results, search]);
+        });
+
+    }, [
+        results,
+        search,
+        filterSession,
+        filterSemester,
+        filterSubject,
+    ]);
 
     if (loading) {
 
@@ -412,6 +546,108 @@ export default function FacultyResults() {
                                 }
                                 className="pl-10"
                             />
+
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+
+                            {/* Academic Session */}
+
+                            <Select
+                                value={filterSession}
+                                onValueChange={setFilterSession}
+                            >
+
+                                <SelectTrigger>
+
+                                    <SelectValue />
+
+                                </SelectTrigger>
+
+                                <SelectContent>
+
+                                    <SelectItem value="2026-27">
+                                        2026-27
+                                    </SelectItem>
+
+                                    <SelectItem value="2027-28">
+                                        2027-28
+                                    </SelectItem>
+
+                                </SelectContent>
+
+                            </Select>
+
+                            {/* Semester */}
+
+                            <Select
+                                value={filterSemester}
+                                onValueChange={setFilterSemester}
+                            >
+
+                                <SelectTrigger>
+
+                                    <SelectValue placeholder="Semester" />
+
+                                </SelectTrigger>
+
+                                <SelectContent>
+
+                                    {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
+
+                                        <SelectItem
+                                            key={s}
+                                            value={String(s)}
+                                        >
+                                            Semester {s}
+                                        </SelectItem>
+
+                                    ))}
+
+                                </SelectContent>
+
+                            </Select>
+
+                            {/* Subject */}
+
+                            <Select
+                                value={filterSubject}
+                                onValueChange={setFilterSubject}
+                            >
+
+                                <SelectTrigger>
+
+                                    <SelectValue placeholder="Subject" />
+
+                                </SelectTrigger>
+
+                                <SelectContent>
+
+                                    {subjects
+                                        .filter((s) =>
+
+                                            !filterSemester ||
+
+                                            String(s.semester) === filterSemester
+
+                                        )
+
+                                        .map((s) => (
+
+                                            <SelectItem
+                                                key={s.id}
+                                                value={String(s.id)}
+                                            >
+
+                                                {s.name}
+
+                                            </SelectItem>
+
+                                        ))}
+
+                                </SelectContent>
+
+                            </Select>
 
                         </div>
 
@@ -639,6 +875,71 @@ export default function FacultyResults() {
 
                         <div>
 
+                            <Label>Academic Session</Label>
+
+                            <Select
+                                value={academicSession}
+                                onValueChange={setAcademicSession}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+
+                                <SelectContent>
+                                    <SelectItem value="2026-27">
+                                        2026-27
+                                    </SelectItem>
+
+                                    <SelectItem value="2027-28">
+                                        2027-28
+                                    </SelectItem>
+                                </SelectContent>
+
+                            </Select>
+
+                        </div>
+
+                        <div>
+
+                            <Label>Department</Label>
+
+                            <Select
+                                value={departmentId}
+                                onValueChange={setDepartmentId}
+                            >
+
+                                <SelectTrigger>
+
+                                    <SelectValue placeholder="Select Department" />
+
+                                </SelectTrigger>
+
+                                <SelectContent>
+
+                                    <SelectItem value="1">
+                                        Computer Science & Engineering
+                                    </SelectItem>
+
+                                    <SelectItem value="2">
+                                        Information Technology
+                                    </SelectItem>
+
+                                    <SelectItem value="3">
+                                        Electronics & Communication
+                                    </SelectItem>
+
+                                    <SelectItem value="4">
+                                        Mechanical Engineering
+                                    </SelectItem>
+
+                                </SelectContent>
+
+                            </Select>
+
+                        </div>
+
+                        {/* <div>
+
                             <Label>Select Student</Label>
 
                             <select
@@ -677,7 +978,7 @@ export default function FacultyResults() {
 
                             </select>
 
-                        </div>
+                        </div> */}
 
                         <div>
 
@@ -729,15 +1030,28 @@ export default function FacultyResults() {
 
                             </Label>
 
-                            <Input
-                                readOnly
+                            <Select
                                 value={semester}
-                                onChange={(e) =>
-                                    setSemester(
-                                        e.target.value
-                                    )
-                                }
-                            />
+                                onValueChange={setSemester}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select Semester" />
+                                </SelectTrigger>
+
+                                <SelectContent>
+
+                                    {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
+                                        <SelectItem
+                                            key={sem}
+                                            value={String(sem)}
+                                        >
+                                            Semester {sem}
+                                        </SelectItem>
+                                    ))}
+
+                                </SelectContent>
+
+                            </Select>
 
                         </div>
 
@@ -782,6 +1096,51 @@ export default function FacultyResults() {
                                 />
 
                             </div>
+
+                        </div>
+
+                    </div>
+
+                    <div className="border-t pt-5 mt-5">
+
+                        <Label className="text-base font-semibold">
+
+                            Import Results from Excel
+
+                        </Label>
+
+                        <div className="mt-3 space-y-3">
+
+                            <Input
+                                type="file"
+                                accept=".xlsx,.xls"
+                                onChange={(e) => {
+
+                                    if (e.target.files?.length) {
+
+                                        setExcelFile(
+                                            e.target.files[0]
+                                        );
+
+                                    }
+
+                                }}
+                            />
+
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                onClick={uploadExcel}
+                                disabled={
+                                    uploadingExcel
+                                }
+                            >
+
+                                {uploadingExcel
+                                    ? "Uploading..."
+                                    : "Upload Excel"}
+
+                            </Button>
 
                         </div>
 

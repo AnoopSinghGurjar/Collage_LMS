@@ -1,6 +1,8 @@
 import { Router, type IRouter } from "express";
 import { eq, and } from "drizzle-orm";
 import { db, resultsTable, studentsTable, subjectsTable, usersTable } from "@workspace/db";
+import * as XLSX from "xlsx";
+import { uploadResultExcel } from "../middlewares/resultUpload";
 
 const router: IRouter = Router();
 
@@ -48,7 +50,15 @@ router.get("/results", async (req, res): Promise<void> => {
 });
 
 router.post("/results", async (req, res): Promise<void> => {
-  const { studentId, subjectId, semester, internalMarks, externalMarks } = req.body;
+  const {
+    studentId,
+    subjectId,
+    semester,
+    academicSession,
+    departmentId,
+    internalMarks,
+    externalMarks,
+  } = req.body;
   if (!studentId || !subjectId || !semester) {
     res.status(400).json({ error: "Missing required fields" });
     return;
@@ -63,6 +73,8 @@ router.post("/results", async (req, res): Promise<void> => {
       studentId,
       subjectId,
       semester,
+      academicSession,
+      departmentId,
       internalMarks: String(internalMarks),
       externalMarks: String(externalMarks),
       totalMarks: String(total),
@@ -167,5 +179,123 @@ router.delete("/results/:id", async (req, res): Promise<void> => {
   });
 
 });
+
+router.post(
+  "/results/import",
+  uploadResultExcel.single("file"),
+  async (req, res): Promise<void> => {
+    try {
+      if (!req.file) {
+        res.status(400).json({
+          error: "Excel file required",
+        });
+        return;
+      }
+
+      const workbook = XLSX.readFile(req.file.path);
+
+      const sheet =
+        workbook.Sheets[
+        workbook.SheetNames[0]
+        ];
+
+      const rows = XLSX.utils.sheet_to_json<any>(
+        sheet
+      );
+
+      const academicSession = req.body.academicSession;
+
+      const departmentId = Number(req.body.departmentId);
+
+      const semester = Number(req.body.semester);
+
+      const subjectId = Number(req.body.subjectId);
+
+      let imported = 0;
+      let skipped = 0;
+
+      for (const row of rows) {
+
+        const studentCode = row["Student ID"];
+
+        const internal = Number(row["Internal"]);
+
+        const external = Number(row["External"]);
+
+        const [student] = await db
+          .select()
+          .from(studentsTable)
+          .where(
+            eq(
+              studentsTable.rollNumber,
+              studentCode
+            )
+          );
+
+        // const [subject] = await db
+        //   .select()
+        //   .from(subjectsTable)
+        //   .where(
+        //     eq(
+        //       subjectsTable.code,
+        //       subjectCode
+        //     )
+        //   );
+
+        if (!student) {
+          skipped++;
+          continue;
+        }
+
+        const total =
+          internal + external;
+
+        const {
+          grade,
+          passed,
+        } = calcGrade(total);
+
+        await db.insert(resultsTable).values({
+          studentId: student.id,
+
+          subjectId,
+
+          semester,
+
+          academicSession,
+
+          departmentId,
+
+          internalMarks: String(internal),
+
+          externalMarks: String(external),
+
+          totalMarks: String(total),
+
+          grade,
+
+          passed,
+        });
+
+        imported++;
+      }
+
+      res.json({
+        imported,
+        skipped,
+        total: rows.length,
+      });
+
+    } catch (err) {
+
+      console.error(err);
+
+      res.status(500).json({
+        error: "Import failed",
+      });
+
+    }
+  }
+);
 
 export default router;

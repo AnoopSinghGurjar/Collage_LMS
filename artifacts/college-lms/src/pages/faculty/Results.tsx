@@ -79,57 +79,87 @@ export default function FacultyResults() {
 
     const [loading, setLoading] = useState(true);
 
-    const [results, setResults] =
-        useState<Result[]>([]);
+    const [results, setResults] = useState<Result[]>([]);
 
-    const [search, setSearch] =
-        useState("");
+    const [search, setSearch] = useState("");
 
     const [openDialog, setOpenDialog] = useState(false);
-
-    const [studentId, setStudentId] = useState("");
-
-    const [subjectId, setSubjectId] = useState("");
-
-    const [semester, setSemester] = useState("");
-
-    const [internalMarks, setInternalMarks] = useState("");
-
-    const [externalMarks, setExternalMarks] = useState("");
-
-    const [saving, setSaving] = useState(false);
 
     const [excelFile, setExcelFile] = useState<File | null>(null);
 
     const [uploadingExcel, setUploadingExcel] = useState(false);
 
-    const [students, setStudents] = useState<any[]>([]);
+    // const [students, setStudents] = useState<any[]>([]);
 
     const [subjects, setSubjects] = useState<any[]>([]);
 
+
+    // ===============================
+    // Upload Dialog States
+    // ===============================
+
+    const [academicSession, setAcademicSession] = useState("2026-27");
+
     const [departmentId, setDepartmentId] = useState("");
+
+    const [semester, setSemester] = useState("");
+
+    const [subjectId, setSubjectId] = useState("");
+
+
+    // ===============================
+    // Table Filter States
+    // ===============================
+
     const [filterSession, setFilterSession] = useState("2026-27");
+
+    const [filterDepartment, setFilterDepartment] = useState("");
 
     const [filterSemester, setFilterSemester] = useState("");
 
     const [filterSubject, setFilterSubject] = useState("");
-    const [academicSession, setAcademicSession] = useState("2026-27");
 
     const fetchResults = async () => {
 
+        console.log({
+        filterSession,
+        filterDepartment,
+        filterSemester,
+        filterSubject,
+    });
+
         try {
 
+            const params = new URLSearchParams();
+
+            if (filterSession)
+                params.append("academicSession", filterSession);
+
+            if (filterDepartment)
+                params.append("departmentId", filterDepartment);
+
+            if (filterSemester)
+                params.append("semester", filterSemester);
+
+            if (filterSubject)
+                params.append("subjectId", filterSubject);
+
             const res = await fetch(
-                "http://localhost:3000/api/results"
+                `http://localhost:3000/api/results?${params.toString()}`
             );
 
             const data = await res.json();
+
+            console.log("Results from API:", data.length);
+            console.table(data);
 
             setResults(
                 data.sort(
                     (a: any, b: any) => b.id - a.id
                 )
             );
+
+            console.log("Results state:", data.length);
 
         } catch (err) {
 
@@ -143,104 +173,109 @@ export default function FacultyResults() {
 
     };
 
-    const fetchStudents = async () => {
+    // const fetchStudents = async () => {
 
-        const res = await fetch(
-            "http://localhost:3000/api/students"
-        );
+    //     const res = await fetch(
+    //         "http://localhost:3000/api/students"
+    //     );
 
-        const data = await res.json();
+    //     const data = await res.json();
 
-        setStudents(data.students || []);
+    //     setStudents(data.students || []);
 
-    };
+    // };
 
     const fetchSubjects = async () => {
-
-        const res = await fetch(
-            "http://localhost:3000/api/subjects"
-        );
-
-        const data = await res.json();
-
-        setSubjects(data);
-
-    };
-
-    const saveResult = async () => {
-
         try {
-
-            setSaving(true);
-
-            const res = await fetch(
-                "http://localhost:3000/api/results",
-                {
-                    method: "POST",
-
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-
-                    body: JSON.stringify({
-
-                        studentId: Number(studentId),
-
-                        subjectId: Number(subjectId),
-
-                        semester: Number(semester),
-
-                        academicSession,
-
-                        departmentId: Number(departmentId),
-
-                        internalMarks: Number(internalMarks),
-
-                        externalMarks: Number(externalMarks),
-
-                    }),
-                }
-            );
+            const res = await fetch("http://localhost:3000/api/subjects");
 
             if (!res.ok) {
-                const err = await res.text();
-                console.log(err);
-                alert(err);
-                throw new Error(err);
+                throw new Error(`HTTP ${res.status}`);
             }
-            await fetchResults();
 
-            setOpenDialog(false);
+            const data = await res.json();
 
-            setStudentId("");
-
-            setSubjectId("");
-
-            setSemester("");
-
-            setInternalMarks("");
-
-            setExternalMarks("");
-
-            alert("Result Added Successfully");
+            setSubjects(data);
 
         } catch (err) {
-
-            console.error(err);
-
-            alert(
-                err instanceof Error
-                    ? err.message
-                    : String(err)
-            );
-
-        } finally {
-
-            setSaving(false);
-
+            console.error("fetchSubjects:", err);
         }
-
     };
+
+    // const saveResult = async () => {
+
+    //     try {
+
+    //         setSaving(true);
+
+    //         const res = await fetch(
+    //             "http://localhost:3000/api/results",
+    //             {
+    //                 method: "POST",
+
+    //                 headers: {
+    //                     "Content-Type": "application/json",
+    //                 },
+
+    //                 body: JSON.stringify({
+
+    //                     studentId: Number(studentId),
+
+    //                     subjectId: Number(subjectId),
+
+    //                     semester: Number(semester),
+
+    //                     academicSession,
+
+    //                     departmentId: Number(departmentId),
+
+    //                     internalMarks: Number(internalMarks),
+
+    //                     externalMarks: Number(externalMarks),
+
+    //                 }),
+    //             }
+    //         );
+
+    //         if (!res.ok) {
+    //             const err = await res.text();
+    //             console.log(err);
+    //             alert(err);
+    //             throw new Error(err);
+    //         }
+    //         await fetchResults();
+
+    //         setOpenDialog(false);
+
+    //         setStudentId("");
+
+    //         setSubjectId("");
+
+    //         setSemester("");
+
+    //         setInternalMarks("");
+
+    //         setExternalMarks("");
+
+    //         alert("Result Added Successfully");
+
+    //     } catch (err) {
+
+    //         console.error(err);
+
+    //         alert(
+    //             err instanceof Error
+    //                 ? err.message
+    //                 : String(err)
+    //         );
+
+    //     } finally {
+
+    //         setSaving(false);
+
+    //     }
+
+    // };
 
     const uploadExcel = async () => {
 
@@ -327,7 +362,14 @@ export default function FacultyResults() {
 
         fetchResults();
 
-        fetchStudents();
+    }, [
+        filterSession,
+        filterDepartment,
+        filterSemester,
+        filterSubject,
+    ]);
+
+    useEffect(() => {
 
         fetchSubjects();
 
@@ -370,6 +412,9 @@ export default function FacultyResults() {
         filterSemester,
         filterSubject,
     ]);
+
+    console.log("Filtered Records:", filteredResults.length);
+    console.table(filteredResults);
 
     if (loading) {
 
@@ -578,6 +623,41 @@ export default function FacultyResults() {
 
                             </Select>
 
+                            {/* Department */}
+
+                            <Select
+                                value={filterDepartment}
+                                onValueChange={setFilterDepartment}
+                            >
+
+                                <SelectTrigger>
+
+                                    <SelectValue placeholder="Department" />
+
+                                </SelectTrigger>
+
+                                <SelectContent>
+
+                                    <SelectItem value="1">
+                                        Computer Science & Engineering
+                                    </SelectItem>
+
+                                    <SelectItem value="2">
+                                        Information Technology
+                                    </SelectItem>
+
+                                    <SelectItem value="3">
+                                        Electronics & Communication
+                                    </SelectItem>
+
+                                    <SelectItem value="4">
+                                        Mechanical Engineering
+                                    </SelectItem>
+
+                                </SelectContent>
+
+                            </Select>
+
                             {/* Semester */}
 
                             <Select
@@ -624,13 +704,19 @@ export default function FacultyResults() {
                                 <SelectContent>
 
                                     {subjects
-                                        .filter((s) =>
+                                        .filter((s) => {
 
-                                            !filterSemester ||
+                                            const semesterMatch =
+                                                !filterSemester ||
+                                                String(s.semester) === filterSemester;
 
-                                            String(s.semester) === filterSemester
+                                            const departmentMatch =
+                                                !filterDepartment ||
+                                                String(s.departmentId) === filterDepartment;
 
-                                        )
+                                            return semesterMatch && departmentMatch;
+
+                                        })
 
                                         .map((s) => (
 
@@ -938,6 +1024,96 @@ export default function FacultyResults() {
 
                         </div>
 
+                        <div>
+
+                            <Label>Semester</Label>
+
+                            <Select
+                                value={semester}
+                                onValueChange={(value) => {
+
+                                    setSemester(value);
+
+                                    setSubjectId("");
+
+                                }}
+                            >
+
+                                <SelectTrigger>
+
+                                    <SelectValue placeholder="Select Semester" />
+
+                                </SelectTrigger>
+
+                                <SelectContent>
+
+                                    {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
+
+                                        <SelectItem
+                                            key={sem}
+                                            value={String(sem)}
+                                        >
+                                            Semester {sem}
+                                        </SelectItem>
+
+                                    ))}
+
+                                </SelectContent>
+
+                            </Select>
+
+                        </div>
+
+                        <div>
+
+                            <Label>Subject</Label>
+
+                            <Select
+                                value={subjectId}
+                                onValueChange={setSubjectId}
+                            >
+
+                                <SelectTrigger>
+
+                                    <SelectValue placeholder="Select Subject" />
+
+                                </SelectTrigger>
+
+                                <SelectContent>
+
+                                    {subjects
+
+                                        .filter((subject) => {
+
+                                            return (
+
+                                                String(subject.departmentId) === departmentId &&
+
+                                                String(subject.semester) === semester
+
+                                            );
+
+                                        })
+
+                                        .map((subject) => (
+
+                                            <SelectItem
+                                                key={subject.id}
+                                                value={String(subject.id)}
+                                            >
+
+                                                {subject.name}
+
+                                            </SelectItem>
+
+                                        ))}
+
+                                </SelectContent>
+
+                            </Select>
+
+                        </div>
+
                         {/* <div>
 
                             <Label>Select Student</Label>
@@ -980,7 +1156,7 @@ export default function FacultyResults() {
 
                         </div> */}
 
-                        <div>
+                        {/* <div>
 
                             <Label>Select Subject</Label>
 
@@ -1095,9 +1271,9 @@ export default function FacultyResults() {
                                     }
                                 />
 
-                            </div>
+                            </div> */}
 
-                        </div>
+                        {/* </div> */}
 
                     </div>
 
@@ -1160,16 +1336,12 @@ export default function FacultyResults() {
                         </Button>
 
                         <Button
-                            disabled={saving}
-                            onClick={saveResult}
+                            type="button"
+                            onClick={uploadExcel}
+                            disabled={uploadingExcel}
                         >
-
-                            {saving
-                                ? "Saving..."
-                                : "Save Result"}
-
+                            {uploadingExcel ? "Uploading..." : "Upload Excel"}
                         </Button>
-
                     </DialogFooter>
 
                 </DialogContent>

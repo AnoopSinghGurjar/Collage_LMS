@@ -18,13 +18,21 @@ function calcGrade(total: number, max = 100): { grade: string; passed: boolean }
 }
 
 router.get("/results", async (req, res): Promise<void> => {
-  const { studentId, subjectId, semester } = req.query as Record<string, string>;
+  const {
+    studentId,
+    subjectId,
+    semester,
+    academicSession,
+    departmentId,
+  } = req.query as Record<string, string>;
 
   const all = await db.select().from(resultsTable);
   const filtered = all
-    .filter((r) => !studentId || r.studentId === parseInt(studentId, 10))
-    .filter((r) => !subjectId || r.subjectId === parseInt(subjectId, 10))
-    .filter((r) => !semester || r.semester === parseInt(semester, 10));
+  .filter((r) => !studentId || r.studentId === Number(studentId))
+  .filter((r) => !subjectId || r.subjectId === Number(subjectId))
+  .filter((r) => !semester || r.semester === Number(semester))
+  .filter((r) => !academicSession || r.academicSession === academicSession)
+  .filter((r) => !departmentId || r.departmentId === Number(departmentId));
 
   const enriched = await Promise.all(
     filtered.map(async (r) => {
@@ -210,6 +218,19 @@ router.post(
       const semester = Number(req.body.semester);
 
       const subjectId = Number(req.body.subjectId);
+
+      // Remove old results for same Session + Department + Semester + Subject
+
+      await db
+        .delete(resultsTable)
+        .where(
+          and(
+            eq(resultsTable.academicSession, academicSession),
+            eq(resultsTable.departmentId, departmentId),
+            eq(resultsTable.semester, semester),
+            eq(resultsTable.subjectId, subjectId)
+          )
+        );
 
       let imported = 0;
       let skipped = 0;

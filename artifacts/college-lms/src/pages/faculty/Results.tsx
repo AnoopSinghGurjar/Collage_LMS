@@ -122,11 +122,11 @@ export default function FacultyResults() {
     const fetchResults = async () => {
 
         console.log({
-        filterSession,
-        filterDepartment,
-        filterSemester,
-        filterSubject,
-    });
+            filterSession,
+            filterDepartment,
+            filterSemester,
+            filterSubject,
+        });
 
         try {
 
@@ -358,6 +358,106 @@ export default function FacultyResults() {
 
     };
 
+    const publishAllResults = async () => {
+
+    if (
+        !filterSession ||
+        !filterDepartment ||
+        !filterSemester ||
+        !filterSubject
+    ) {
+
+        alert(
+            "Select Session, Department, Semester and Subject first."
+        );
+
+        return;
+
+    }
+
+    try {
+
+        const res = await fetch(
+            "http://localhost:3000/api/results/publish",
+            {
+
+                method: "PATCH",
+
+                headers: {
+                    "Content-Type": "application/json",
+                },
+
+                body: JSON.stringify({
+
+                    academicSession: filterSession,
+
+                    departmentId: Number(filterDepartment),
+
+                    semester: Number(filterSemester),
+
+                    subjectId: Number(filterSubject),
+
+                }),
+
+            }
+        );
+
+        if (!res.ok) {
+
+            throw new Error("Publish failed");
+
+        }
+
+        alert("Results Published Successfully");
+
+        fetchResults();
+
+    } catch (err) {
+
+        console.error(err);
+
+        alert("Publish Failed");
+
+    }
+
+};
+
+    const togglePublish = async (
+        id: number,
+        published: boolean
+    ) => {
+
+        try {
+
+            const res = await fetch(
+                `http://localhost:3000/api/results/${id}`,
+                {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        published: !published,
+                    }),
+                }
+            );
+
+            if (!res.ok) {
+                throw new Error("Failed to update publish status");
+            }
+
+            await fetchResults();
+
+        } catch (err) {
+
+            console.error(err);
+
+            alert("Unable to update publish status");
+
+        }
+
+    };
+
     useEffect(() => {
 
         fetchResults();
@@ -477,6 +577,14 @@ export default function FacultyResults() {
 
                         Add Result
 
+                    </Button>
+
+                    <Button
+                        variant="default"
+                        className="bg-green-600 hover:bg-green-700"
+                        onClick={publishAllResults}
+                    >
+                        Publish All Results
                     </Button>
 
                 </div>
@@ -807,6 +915,12 @@ export default function FacultyResults() {
 
                                         <th className="text-center p-3">
 
+                                            Published
+
+                                        </th>
+
+                                        <th className="text-center p-3">
+
                                             Action
 
                                         </th>
@@ -886,6 +1000,28 @@ export default function FacultyResults() {
 
                                             </td>
 
+                                            <td className="p-3 text-center">
+
+                                                {result.published ? (
+
+                                                    <Badge className="bg-green-600">
+
+                                                        Published
+
+                                                    </Badge>
+
+                                                ) : (
+
+                                                    <Badge variant="secondary">
+
+                                                        Draft
+
+                                                    </Badge>
+
+                                                )}
+
+                                            </td>
+
                                             <td className="p-3">
 
                                                 <div className="flex justify-center gap-2">
@@ -895,6 +1031,25 @@ export default function FacultyResults() {
                                                         variant="secondary"
                                                     >
                                                         Edit
+                                                    </Button>
+
+                                                    <Button
+                                                        size="sm"
+                                                        variant={
+                                                            result.published
+                                                                ? "outline"
+                                                                : "default"
+                                                        }
+                                                        onClick={() =>
+                                                            togglePublish(
+                                                                result.id,
+                                                                Boolean(result.published)
+                                                            )
+                                                        }
+                                                    >
+                                                        {result.published
+                                                            ? "Unpublish"
+                                                            : "Publish"}
                                                     </Button>
 
                                                     <Button

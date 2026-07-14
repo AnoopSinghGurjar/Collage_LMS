@@ -28,11 +28,11 @@ router.get("/results", async (req, res): Promise<void> => {
 
   const all = await db.select().from(resultsTable);
   const filtered = all
-  .filter((r) => !studentId || r.studentId === Number(studentId))
-  .filter((r) => !subjectId || r.subjectId === Number(subjectId))
-  .filter((r) => !semester || r.semester === Number(semester))
-  .filter((r) => !academicSession || r.academicSession === academicSession)
-  .filter((r) => !departmentId || r.departmentId === Number(departmentId));
+    .filter((r) => !studentId || r.studentId === Number(studentId))
+    .filter((r) => !subjectId || r.subjectId === Number(subjectId))
+    .filter((r) => !semester || r.semester === Number(semester))
+    .filter((r) => !academicSession || r.academicSession === academicSession)
+    .filter((r) => !departmentId || r.departmentId === Number(departmentId));
 
   const enriched = await Promise.all(
     filtered.map(async (r) => {
@@ -101,76 +101,89 @@ router.post("/results", async (req, res): Promise<void> => {
   });
 });
 
+router.patch("/results/publish", async (req, res) => {
+
+  const {
+    academicSession,
+    departmentId,
+    semester,
+    subjectId,
+  } = req.body;
+
+  await db
+    .update(resultsTable)
+    .set({
+      published: true,
+    })
+    .where(
+      and(
+        eq(resultsTable.academicSession, academicSession),
+        eq(resultsTable.departmentId, departmentId),
+        eq(resultsTable.semester, semester),
+        eq(resultsTable.subjectId, subjectId)
+      )
+    );
+
+  res.json({
+    message: "Results Published Successfully",
+  });
+
+});
+
 router.patch("/results/:id", async (req, res): Promise<void> => {
 
   const id = Number(req.params.id);
 
-  const {
-    internalMarks,
-    externalMarks,
-    remarks,
-    published,
-  } = req.body;
+  const existing = await db
+    .select()
+    .from(resultsTable)
+    .where(eq(resultsTable.id, id));
+
+  if (!existing.length) {
+    res.status(404).json({
+      error: "Result not found",
+    });
+    return;
+  }
+
+  const current = existing[0];
+
+  const internalMarks =
+    req.body.internalMarks ?? Number(current.internalMarks);
+
+  const externalMarks =
+    req.body.externalMarks ?? Number(current.externalMarks);
 
   const total =
-    Number(internalMarks) +
-    Number(externalMarks);
+    Number(internalMarks) + Number(externalMarks);
 
-  const { grade, passed } =
-    calcGrade(total);
+  const { grade, passed } = calcGrade(total);
 
   const [result] = await db
     .update(resultsTable)
     .set({
 
-      internalMarks:
-        String(internalMarks),
+      internalMarks: String(internalMarks),
 
-      externalMarks:
-        String(externalMarks),
+      externalMarks: String(externalMarks),
 
-      totalMarks:
-        String(total),
+      totalMarks: String(total),
 
       grade,
 
       passed,
 
-      remarks,
+      remarks:
+        req.body.remarks ?? current.remarks,
 
-      published,
+      published:
+        req.body.published ?? current.published,
 
     })
     .where(eq(resultsTable.id, id))
     .returning();
 
-  if (!result) {
-
-    res.status(404).json({
-      error: "Result not found",
-    });
-
-    return;
-
-  }
-
-  res.json({
-
-    ...result,
-
-    internalMarks: Number(
-      result.internalMarks
-    ),
-
-    externalMarks: Number(
-      result.externalMarks
-    ),
-
-    totalMarks: Number(
-      result.totalMarks
-    ),
-
-  });
+  res.json(result);
 
 });
 

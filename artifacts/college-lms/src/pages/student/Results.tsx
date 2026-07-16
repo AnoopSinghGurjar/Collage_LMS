@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { useListResults } from '@workspace/api-client-react';
 import { useAuth } from '@/context/AuthContext';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
@@ -7,14 +9,24 @@ import { DataTable } from '@/components/DataTable';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 
 export default function StudentResults() {
   const { studentId } = useAuth();
   const [semester, setSemester] = useState<string>("all");
+  const [academicSession, setAcademicSession] = useState("2026-27");
 
   const { data: results, isLoading } = useListResults({
-    studentId: studentId,
-    semester: semester !== "all" ? Number(semester) : undefined
+    studentId,
+
+    academicSession,
+
+    published: true,
+
+    semester:
+      semester !== "all"
+        ? Number(semester)
+        : undefined,
   });
 
   const getGradeColor = (grade: string) => {
@@ -56,34 +68,146 @@ export default function StudentResults() {
     }, 0) / results.length).toFixed(2)
     : "N/A";
 
+  const downloadResultPDF = () => {
+
+    const doc = new jsPDF();
+
+    doc.setFontSize(18);
+    doc.text("SkyCode LMS", 14, 18);
+
+    doc.setFontSize(14);
+    doc.text("Student Result", 14, 28);
+
+    doc.setFontSize(11);
+    doc.text(`Academic Session : ${academicSession}`, 14, 38);
+
+    doc.text(
+      `Semester : ${semester === "all" ? "All" : semester}`,
+      14,
+      45
+    );
+
+    autoTable(doc, {
+      startY: 55,
+
+      head: [[
+        "Subject",
+        "Internal",
+        "External",
+        "Total",
+        "Grade",
+        "Status",
+      ]],
+
+      body: (results || []).map((r) => [
+        String(r.subjectName ?? ""),
+        String(r.internalMarks ?? ""),
+        String(r.externalMarks ?? ""),
+        String(r.totalMarks ?? ""),
+        String(r.grade ?? ""),
+        r.passed ? "PASS" : "FAIL",
+      ] as string[]),
+    });
+
+    const percentage =
+      results && results.length > 0
+        ? (
+          results.reduce(
+            (sum, r) => sum + Number(r.totalMarks),
+            0
+          ) / results.length
+        ).toFixed(2)
+        : "0";
+
+    const finalY =
+      (doc as any).lastAutoTable.finalY + 12;
+
+    doc.text(`SGPA : ${sgpa}`, 14, finalY);
+
+    doc.text(
+      `Average Percentage : ${percentage}%`,
+      14,
+      finalY + 8
+    );
+
+    doc.save("Student_Result.pdf");
+
+  };
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold tracking-tight">Academic Results</h1>
 
-      <div className="flex items-center gap-4 mb-6">
+      <div className="flex flex-wrap items-center gap-4 mb-6">
 
-        <Label>Semester</Label>
+        <div>
 
-        <select
-          className="h-10 rounded-md border border-input bg-background px-3"
-          value={semester}
-          onChange={(e) =>
-            setSemester(e.target.value)
-          }
-        >
+          <Label>Academic Session</Label>
 
-          {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
+          <Select
+            value={academicSession}
+            onValueChange={setAcademicSession}
+          >
 
-            <option
-              key={sem}
-              value={sem}
-            >
-              Semester {sem}
-            </option>
+            <SelectTrigger className="w-44">
 
-          ))}
+              <SelectValue />
 
-        </select>
+            </SelectTrigger>
+
+            <SelectContent>
+
+              <SelectItem value="2026-27">
+                2026-27
+              </SelectItem>
+
+              <SelectItem value="2027-28">
+                2027-28
+              </SelectItem>
+
+            </SelectContent>
+
+          </Select>
+
+          <Button onClick={downloadResultPDF}>
+            Download PDF
+          </Button>
+
+        </div>
+
+        <div>
+
+          <Label>Semester</Label>
+
+          <Select
+            value={semester}
+            onValueChange={setSemester}
+          >
+
+            <SelectTrigger className="w-44">
+
+              <SelectValue placeholder="Semester" />
+
+            </SelectTrigger>
+
+            <SelectContent>
+
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
+
+                <SelectItem
+                  key={sem}
+                  value={String(sem)}
+                >
+                  Semester {sem}
+                </SelectItem>
+
+              ))}
+
+            </SelectContent>
+
+          </Select>
+
+        </div>
 
       </div>
 

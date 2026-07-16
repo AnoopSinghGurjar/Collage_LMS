@@ -690,18 +690,35 @@ semester?: number | null;
 };
 
 export type ListResultsParams = {
-/**
- * @nullable
- */
-studentId?: number | null;
-/**
- * @nullable
- */
-subjectId?: number | null;
-/**
- * @nullable
- */
-semester?: number | null;
+  /**
+   * @nullable
+   */
+  studentId?: number | null;
+
+  /**
+   * @nullable
+   */
+  subjectId?: number | null;
+
+  /**
+   * @nullable
+   */
+  semester?: number | null;
+
+  /**
+   * @nullable
+   */
+  departmentId?: number | null;
+
+  /**
+   * @nullable
+   */
+  academicSession?: string | null;
+
+  /**
+   * @nullable
+   */
+  published?: boolean | null;
 };
 
 export type ListMaterialsParams = {

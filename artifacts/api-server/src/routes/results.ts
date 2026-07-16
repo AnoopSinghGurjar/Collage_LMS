@@ -24,15 +24,18 @@ router.get("/results", async (req, res): Promise<void> => {
     semester,
     academicSession,
     departmentId,
+    published,
   } = req.query as Record<string, string>;
 
   const all = await db.select().from(resultsTable);
   const filtered = all
-    .filter((r) => !studentId || r.studentId === Number(studentId))
-    .filter((r) => !subjectId || r.subjectId === Number(subjectId))
-    .filter((r) => !semester || r.semester === Number(semester))
-    .filter((r) => !academicSession || r.academicSession === academicSession)
-    .filter((r) => !departmentId || r.departmentId === Number(departmentId));
+  .filter((r) => !studentId || r.studentId === Number(studentId))
+  .filter((r) => !subjectId || r.subjectId === Number(subjectId))
+  .filter((r) => !semester || r.semester === Number(semester))
+  .filter((r) => !academicSession || r.academicSession === academicSession)
+  .filter((r) => !departmentId || r.departmentId === Number(departmentId))
+  .filter((r) => published === undefined || r.published === (published === "true"));
+
 
   const enriched = await Promise.all(
     filtered.map(async (r) => {

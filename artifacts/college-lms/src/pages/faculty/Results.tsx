@@ -41,6 +41,8 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 
+import { Textarea } from "@/components/ui/textarea";
+
 interface Result {
 
     id: number;
@@ -118,6 +120,18 @@ export default function FacultyResults() {
     const [filterSemester, setFilterSemester] = useState("");
 
     const [filterSubject, setFilterSubject] = useState("");
+
+    const [editOpen, setEditOpen] = useState(false);
+
+    const [editingResult, setEditingResult] = useState<Result | null>(null);
+
+    const [editInternal, setEditInternal] = useState("");
+
+    const [editExternal, setEditExternal] = useState("");
+
+    const [editRemarks, setEditRemarks] = useState("");
+
+    const [savingEdit, setSavingEdit] = useState(false);
 
     const fetchResults = async () => {
 
@@ -360,67 +374,67 @@ export default function FacultyResults() {
 
     const publishAllResults = async () => {
 
-    if (
-        !filterSession ||
-        !filterDepartment ||
-        !filterSemester ||
-        !filterSubject
-    ) {
+        if (
+            !filterSession ||
+            !filterDepartment ||
+            !filterSemester ||
+            !filterSubject
+        ) {
 
-        alert(
-            "Select Session, Department, Semester and Subject first."
-        );
+            alert(
+                "Select Session, Department, Semester and Subject first."
+            );
 
-        return;
-
-    }
-
-    try {
-
-        const res = await fetch(
-            "http://localhost:3000/api/results/publish",
-            {
-
-                method: "PATCH",
-
-                headers: {
-                    "Content-Type": "application/json",
-                },
-
-                body: JSON.stringify({
-
-                    academicSession: filterSession,
-
-                    departmentId: Number(filterDepartment),
-
-                    semester: Number(filterSemester),
-
-                    subjectId: Number(filterSubject),
-
-                }),
-
-            }
-        );
-
-        if (!res.ok) {
-
-            throw new Error("Publish failed");
+            return;
 
         }
 
-        alert("Results Published Successfully");
+        try {
 
-        fetchResults();
+            const res = await fetch(
+                "http://localhost:3000/api/results/publish",
+                {
 
-    } catch (err) {
+                    method: "PATCH",
 
-        console.error(err);
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
 
-        alert("Publish Failed");
+                    body: JSON.stringify({
 
-    }
+                        academicSession: filterSession,
 
-};
+                        departmentId: Number(filterDepartment),
+
+                        semester: Number(filterSemester),
+
+                        subjectId: Number(filterSubject),
+
+                    }),
+
+                }
+            );
+
+            if (!res.ok) {
+
+                throw new Error("Publish failed");
+
+            }
+
+            alert("Results Published Successfully");
+
+            fetchResults();
+
+        } catch (err) {
+
+            console.error(err);
+
+            alert("Publish Failed");
+
+        }
+
+    };
 
     const togglePublish = async (
         id: number,
@@ -453,6 +467,99 @@ export default function FacultyResults() {
             console.error(err);
 
             alert("Unable to update publish status");
+
+        }
+
+    };
+
+    const deleteResult = async (id: number) => {
+
+        const confirmDelete = window.confirm(
+            "Are you sure you want to delete this result?"
+        );
+
+        if (!confirmDelete) return;
+
+        try {
+
+            const res = await fetch(
+                `http://localhost:3000/api/results/${id}`,
+                {
+                    method: "DELETE",
+                }
+            );
+
+            if (!res.ok) {
+
+                throw new Error("Delete failed");
+
+            }
+
+            await fetchResults();
+
+            alert("Result deleted successfully");
+
+        } catch (err) {
+
+            console.error(err);
+
+            alert("Unable to delete result");
+
+        }
+
+    };
+
+    const updateResult = async () => {
+
+        if (!editingResult) return;
+
+        try {
+
+            setSavingEdit(true);
+
+            const res = await fetch(
+                `http://localhost:3000/api/results/${editingResult.id}`,
+                {
+                    method: "PATCH",
+
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+
+                    body: JSON.stringify({
+
+                        internalMarks: Number(editInternal),
+
+                        externalMarks: Number(editExternal),
+
+                        remarks: editRemarks,
+
+                    }),
+
+                }
+            );
+
+            if (!res.ok) {
+
+                throw new Error("Update failed");
+
+            }
+
+            await fetchResults();
+
+            setEditOpen(false);
+
+            alert("Result Updated Successfully");
+
+        } catch (err) {
+
+            console.error(err);
+
+            alert("Update Failed");
+
+        } finally {
+
+            setSavingEdit(false);
 
         }
 
@@ -1029,6 +1136,19 @@ export default function FacultyResults() {
                                                     <Button
                                                         size="sm"
                                                         variant="secondary"
+                                                        onClick={() => {
+
+                                                            setEditingResult(result);
+
+                                                            setEditInternal(String(result.internalMarks));
+
+                                                            setEditExternal(String(result.externalMarks));
+
+                                                            setEditRemarks(result.remarks ?? "");
+
+                                                            setEditOpen(true);
+
+                                                        }}
                                                     >
                                                         Edit
                                                     </Button>
@@ -1055,6 +1175,7 @@ export default function FacultyResults() {
                                                     <Button
                                                         size="sm"
                                                         variant="destructive"
+                                                        onClick={() => deleteResult(result.id)}
                                                     >
                                                         Delete
                                                     </Button>
@@ -1497,6 +1618,121 @@ export default function FacultyResults() {
                         >
                             {uploadingExcel ? "Uploading..." : "Upload Excel"}
                         </Button>
+                    </DialogFooter>
+
+                </DialogContent>
+
+            </Dialog>
+
+            <Dialog
+                open={editOpen}
+                onOpenChange={setEditOpen}
+            >
+                <DialogContent className="sm:max-w-md">
+
+                    <DialogHeader>
+
+                        <DialogTitle>
+
+                            Edit Result
+
+                        </DialogTitle>
+
+                    </DialogHeader>
+
+                    <div className="space-y-4">
+
+                        <div>
+
+                            <Label>Student</Label>
+
+                            <Input
+                                readOnly
+                                value={editingResult?.studentName ?? ""}
+                            />
+
+                        </div>
+
+                        <div>
+
+                            <Label>Subject</Label>
+
+                            <Input
+                                readOnly
+                                value={editingResult?.subjectName ?? ""}
+                            />
+
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+
+                            <div>
+
+                                <Label>Internal Marks</Label>
+
+                                <Input
+                                    type="number"
+                                    value={editInternal}
+                                    onChange={(e) =>
+                                        setEditInternal(e.target.value)
+                                    }
+                                />
+
+                            </div>
+
+                            <div>
+
+                                <Label>External Marks</Label>
+
+                                <Input
+                                    type="number"
+                                    value={editExternal}
+                                    onChange={(e) =>
+                                        setEditExternal(e.target.value)
+                                    }
+                                />
+
+                            </div>
+
+                        </div>
+
+                        <div>
+
+                            <Label>Remarks</Label>
+
+                            <Textarea
+                                rows={3}
+                                value={editRemarks}
+                                onChange={(e) =>
+                                    setEditRemarks(e.target.value)
+                                }
+                                placeholder="Remarks (Optional)"
+                            />
+
+                        </div>
+
+                    </div>
+
+                    <DialogFooter>
+
+                        <Button
+                            variant="outline"
+                            onClick={() =>
+                                setEditOpen(false)
+                            }
+                        >
+                            Cancel
+                        </Button>
+
+                        <Button
+                            disabled={savingEdit}
+                            onClick={updateResult}
+                        >
+                            {savingEdit
+                                ? "Saving..."
+                                : "Save Changes"}
+                        </Button>
+
                     </DialogFooter>
 
                 </DialogContent>

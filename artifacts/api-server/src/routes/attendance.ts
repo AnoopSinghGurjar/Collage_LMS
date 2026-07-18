@@ -128,6 +128,7 @@ router.get("/attendance", async (req, res): Promise<void> => {
 
 router.get("/attendance/students", async (req, res): Promise<void> => {
   const subjectId = Number(req.query.subjectId);
+  const section = (req.query.section as string) || "A";
 
   if (!subjectId) {
     res.status(400).json({
@@ -154,9 +155,13 @@ router.get("/attendance/students", async (req, res): Promise<void> => {
     .where(eq(studentsTable.departmentId, subject.departmentId));
 
   const result = await Promise.all(
-    students
-      .filter((s) => s.semester === subject.semester)
-      .map(async (student) => {
+  students
+    .filter(
+      (s) =>
+        s.semester === subject.semester &&
+        s.section === section
+    )
+    .map(async (student) => {
         const [user] = await db
           .select()
           .from(usersTable)
@@ -813,45 +818,45 @@ router.get("/attendance/export-pdf", async (req, res): Promise<void> => {
     }
 
     // ==========================
-// Footer
-// ==========================
+    // Footer
+    // ==========================
 
-const pages = pdf.getPages();
+    const pages = pdf.getPages();
 
-pages.forEach((p, index) => {
+    pages.forEach((p, index) => {
 
-  const footerFont = bold;
+      const footerFont = bold;
 
-  p.drawLine({
-    start: { x: 50, y: 40 },
-    end: { x: 545, y: 40 },
-    thickness: 0.8,
-    color: rgb(0.8, 0.8, 0.8),
-  });
+      p.drawLine({
+        start: { x: 50, y: 40 },
+        end: { x: 545, y: 40 },
+        thickness: 0.8,
+        color: rgb(0.8, 0.8, 0.8),
+      });
 
-  p.drawText(
-    `Generated on : ${new Date().toLocaleString()}`,
-    {
-      x: 50,
-      y: 22,
-      size: 9,
-      font: footerFont,
-      color: rgb(0.4, 0.4, 0.4),
-    }
-  );
+      p.drawText(
+        `Generated on : ${new Date().toLocaleString()}`,
+        {
+          x: 50,
+          y: 22,
+          size: 9,
+          font: footerFont,
+          color: rgb(0.4, 0.4, 0.4),
+        }
+      );
 
-  p.drawText(
-    `Page ${index + 1} of ${pages.length}`,
-    {
-      x: 470,
-      y: 22,
-      size: 9,
-      font: footerFont,
-      color: rgb(0.4, 0.4, 0.4),
-    }
-  );
+      p.drawText(
+        `Page ${index + 1} of ${pages.length}`,
+        {
+          x: 470,
+          y: 22,
+          size: 9,
+          font: footerFont,
+          color: rgb(0.4, 0.4, 0.4),
+        }
+      );
 
-});
+    });
 
     const pdfBytes = await pdf.save();
 

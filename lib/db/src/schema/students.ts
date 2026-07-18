@@ -9,6 +9,7 @@ export const studentsTable = pgTable("students", {
   phone: text("phone"),
   semester: integer("semester").notNull().default(1),
   departmentId: integer("department_id").notNull(),
+  section: text("section").notNull().default("A"),
   enrolledAt: timestamp("enrolled_at").defaultNow().notNull(),
 });
 
